@@ -24,13 +24,40 @@ A diferencia de los traductores genéricos, **Kuskachay AI** opera en el momento
 
 ---
 
+## 🌟 Capacidades Multimodales Reales (En el Navegador)
+
+El prototipo ha sido potenciado para operar con capacidades multimodales reales ejecutadas directamente desde el navegador, sin depender de servidores complejos que puedan fallar en vivo:
+
+### 🎙️ 1. Comunicación por Micrófono en Vivo (Voz a Texto + Detección de Intención)
+* Integra la API nativa de reconocimiento de voz del navegador (`SpeechRecognition`) con un botón de micrófono pulsante.
+* El usuario puede hablar directamente al micrófono (por ejemplo: *"No entiendo qué significa esto, explícame más fácil"* o *"Me robaron 5 vacas, no 4"*).
+* El asistente detecta automáticamente la discrepancia o re-explica el contenido con un vocabulario más sencillo y accesible.
+* Incluye botones de acceso rápido debajo del micrófono para simular la entrada de voz con un solo clic durante demostraciones en vivo o streaming.
+
+### 📸 2. Subida y Lectura Real de Fotografías / Imágenes Judiciales (OCR + Visión)
+* Permite tomar fotos con la cámara o subir cualquier imagen (`.jpg`, `.png`) de un acta, notificación o documento judicial.
+* Muestra la vista previa del documento y utiliza **Tesseract.js** (OCR 100% en el navegador) o integración opcional con **Gemini 1.5 Flash Vision** mediante API Key.
+* Extrae el contenido, clasifica el tipo de documento y lo traduce/explica en la variante quechua seleccionada (**Chanka**, **Collao** o **Áncash**) y en castellano sencillo.
+
+### 📄 3. Recepción y Lectura Real de Documentos PDF, Word (.DOCX) y .TXT
+* **PDF.js (Mozilla):** Extrae texto real de archivos PDF cargados en vivo.
+* **Mammoth.js:** Procesa y lee documentos de Microsoft Word (`.docx`) al instante.
+* **Editor interactivo en vivo:** El área de texto extraído es completamente editable para pruebas en vivo con párrafos judiciales específicos solicitados por jurados.
+
+### 🔊 4. Lectura en Voz Alta (TTS) y Re-explicación Adaptativa ("Sello de Comprensión")
+* Síntesis de voz en Quechua y Castellano con animación dinámica de ondas sonoras (con soporte para cargar audios `.mp3` de hablantes nativos).
+* Botón **"No entendí bien: Re-explicar con ejemplos sencillos"** para simplificar terminología jurídica a un lenguaje comunitario comprensible.
+* **Validación de Discrepancias:** Bloquea la firma si los hechos declarados no concuerdan con el acta (ej. caso de las 4 vs. 5 vacas de Don Julián).
+* **Exportación Institucional:** Genera en PDF imprimible tanto la **Constancia Bilingüe con Sello de Comprensión** como la **Solicitud de Intérprete Oficial** respaldada en la Ley N° 29735.
+
+---
+
 ## 💡 Nuestra Solución y Diferencial Clave
 
 ### 1. El "Sello de Comprensión" (Diferenciador Imbatible)
-No nos limitamos a transcribir o traducir:
-1. **Lectura Multimodal:** El ciudadano o funcionario fotografía el documento oficial (acta, citación).
-2. **Explicación por Voz en Lenguaje Claro:** Mediante modelos multimodales y RAG normativo, la IA sintetiza los hechos y derechos en quechua adaptado a la variante regional del usuario.
-3. **Verificación Activa:** El sistema formula de 2 a 3 preguntas de control por voz. Si detecta discrepancias (ej. el acta policial registra 4 animales robados pero el comunero declara 5), bloquea la firma y exige corrección inmediata.
+1. **Lectura Multimodal:** El ciudadano o funcionario fotografía o sube el documento oficial (acta, citación, PDF, Word).
+2. **Explicación por Voz en Lenguaje Claro:** La IA sintetiza los hechos y derechos en quechua adaptado a la variante regional del usuario.
+3. **Verificación Activa:** Formula preguntas de control por voz. Si detecta discrepancias, bloquea la firma y exige corrección inmediata.
 4. **Constancia Bilingüe con Trazabilidad:** Genera una constancia digital en PDF con sello de tiempo, preguntas auditables y citas legales de respaldo, protegiendo tanto al ciudadano como al funcionario público contra futuras nulidades.
 
 ### 2. Modelo B2G / SaaS Institucional
@@ -41,14 +68,18 @@ No nos limitamos a transcribir o traducir:
 
 ## 🛠️ Arquitectura Técnica
 
-* **Frontend:** PWA interactiva ultra ligera desarrollada con HTML5, Tailwind CSS y Vanilla JS para garantizar compatibilidad con dispositivos de gama de entrada sin consumo elevado de datos móviles.
-* **Procesamiento Multimodal (Visión + LLM):** Pipeline para extracción OCR de actas estructuradas y traducción jurídica contextualmente adaptada al quechua (variantes Chanka y Collao).
-* **Voz & Accesibilidad:** Integración con Web Speech API y modelos de síntesis de voz locales/cloud optimizados para hablantes con bajo nivel de lectoescritura.
-* **RAG Legal (Normas Peruanas):** Indexación de normas clave:
+* **Frontend:** PWA interactiva ultra ligera desarrollada con HTML5, Tailwind CSS y Vanilla JS.
+* **Librerías del Cliente:**
+  * **Tesseract.js:** OCR local en navegador para fotos de actas.
+  * **PDF.js (Mozilla):** Renderizado y extracción de texto de PDFs.
+  * **Mammoth.js:** Lectura cliente de documentos Word (.docx).
+  * **Web Speech API:** Speech-to-Text y Text-to-Speech multilingüe.
+  * **Google Gemini 1.5 Flash Vision (Opcional):** Procesamiento de imágenes y análisis multimodal avanzado.
+* **RAG Legal (Normas Peruanas):**
   * Constitución Política del Perú (Art. 2, inc. 19).
   * Ley N° 29735 (Uso, preservación y recuperación de lenguas originarias).
   * Código Procesal Penal (Derechos del imputado y la víctima).
-* **Despliegue:** Integración continua y entrega continua (CI/CD) alojada en **Vercel Edge Network**.
+* **Despliegue:** Alojado en **Vercel Edge Network**.
 
 ---
 

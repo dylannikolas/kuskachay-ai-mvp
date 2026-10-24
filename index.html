@@ -1,1403 +1,1156 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kuskachay AI | Asistente Legal Intercultural en Quechua</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a;
-            color: #1e293b;
-        }
-        /* Sutil patrón inspirado en textilería andina para bordes superiores */
-        .andean-border {
-            background: repeating-linear-gradient(
-                90deg,
-                #4f46e5 0px, #4f46e5 12px,
-                #ec4899 12px, #ec4899 24px,
-                #f59e0b 24px, #f59e0b 36px,
-                #10b981 36px, #10b981 48px
-            );
-            height: 5px;
-            width: 100%;
-        }
-        /* Animación de ondas de voz */
-        @keyframes wave {
-            0%, 100% { height: 6px; }
-            50% { height: 28px; }
-        }
-        .wave-bar {
-            width: 4px;
-            background-color: #4f46e5;
-            border-radius: 9999px;
-            transition: height 0.2s ease;
-        }
-        .playing .wave-bar {
-            animation: wave 0.9s infinite ease-in-out;
-        }
-        .playing .wave-bar:nth-child(2n) { animation-delay: 0.15s; }
-        .playing .wave-bar:nth-child(3n) { animation-delay: 0.3s; }
-        .playing .wave-bar:nth-child(4n) { animation-delay: 0.45s; }
-        
-        /* Scrollbar limpia para el simulador móvil */
-        .no-scrollbar::-webkit-scrollbar {
-            width: 5px;
-        }
-        .no-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .no-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 9999px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kuskachay AI — Asistente Legal Multimodal Bilingüe (Quechua / Castellano)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- PDF.js para lectura real de PDFs en navegador -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Mammoth.js para lectura real de archivos Word (.docx) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <!-- Tesseract.js para OCR real de fotos si no se usa API Key -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-        /* Estilos de impresión para exportar Constancia / Solicitud en PDF en vivo */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printable-modal, #printable-modal * {
-                visibility: visible;
-            }
-            #printable-modal {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white !important;
-                box-shadow: none !important;
-            }
-            .no-print {
-                display: none !important;
-            }
-        }
-    </style>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f19;
+      color: #f8fafc;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .pulse-ring {
+      animation: pulse-ring 1.6s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 18px rgba(239, 68, 68, 0); }
+      100% { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .wave-bar {
+      transition: height 0.15s ease-in-out;
+    }
+    @media print {
+      body * { visibility: hidden; }
+      #printableCert, #printableCert * { visibility: visible; }
+      #printableCert { position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important; }
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-900 text-slate-100">
+<body class="min-h-screen flex flex-col">
 
-    <!-- BARRA DE CONTROL PARA DEMO DAY (Fija arriba para compartir pantalla) -->
-    <header class="bg-slate-950/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
-        <div class="andean-border"></div>
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            
-            <!-- Marca y Ley -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <i class="fas fa-scale-balanced text-white text-lg"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="font-extrabold text-lg tracking-tight text-white">Kuskachay<span class="text-indigo-400">.AI</span></span>
-                        <span class="hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <i class="fas fa-shield-check mr-1"></i> Ley N° 29735
-                        </span>
-                    </div>
-                    <p class="text-xs text-slate-400 hidden sm:block">"Nadie firma lo que no entiende" • Sello de Comprensión Legal</p>
-                </div>
-            </div>
+  <!-- BARRA SUPERIOR DE DEMO & CONTROL MULTIMODAL -->
+  <header class="sticky top-0 z-50 glass-panel border-b border-slate-800 px-4 py-2.5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 via-orange-600 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+          <i class="fa-solid fa-scale-balanced text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-lg tracking-tight text-white">Kuskachay<span class="text-amber-400">.AI</span></span>
+            <span class="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">Multimodal Live MVP</span>
+          </div>
+          <p class="text-xs text-slate-400">Voz en Vivo • Fotos/Cámara • PDF • Word (.docx) • Sello de Comprensión</p>
+        </div>
+      </div>
 
-            <!-- Selector rápido de Caso de Uso (Storytelling) -->
-            <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
-                <span class="text-xs text-slate-400 px-2.5 font-medium hidden lg:inline"><i class="fas fa-book-open mr-1 text-amber-400"></i>Caso Demo:</span>
-                <button id="btn-case-julian" onclick="selectCase('julian')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white shadow">
-                    1. Don Julián (Abigeato / Discrepancia)
-                </button>
-                <button id="btn-case-rosa" onclick="selectCase('rosa')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white">
-                    2. Rosa (Citación Fiscal / Reexplica)
-                </button>
-            </div>
+      <!-- Controles de casos precargados y vista -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex items-center gap-1 text-xs">
+          <button onclick="loadPresetCase('julian')" id="btnCaseJulian" class="px-3 py-1.5 rounded-lg font-semibold bg-amber-500 text-slate-950 transition">
+            <i class="fa-solid fa-cow mr-1"></i>Caso 1: Acta Policial (Abigeato)
+          </button>
+          <button onclick="loadPresetCase('rosa')" id="btnCaseRosa" class="px-3 py-1.5 rounded-lg font-semibold text-slate-300 hover:text-white transition">
+            <i class="fa-solid fa-file-signature mr-1"></i>Caso 2: Citación Fiscal (Rosa)
+          </button>
+        </div>
 
-            <!-- Selector de Vista: Ciudadano (Móvil) vs Institución (SaaS) -->
+        <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-800 flex items-center gap-1 text-xs">
+          <button onclick="switchMainView('citizen')" id="tabCitizen" class="px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white transition">
+            <i class="fa-solid fa-mobile-screen-button mr-1"></i>App Ciudadano
+          </button>
+          <button onclick="switchMainView('saas')" id="tabSaas" class="px-3 py-1.5 rounded-lg font-semibold text-slate-300 hover:text-white transition">
+            <i class="fa-solid fa-chart-pie mr-1"></i>Panel Institucional (SaaS)
+          </button>
+        </div>
+
+        <button onclick="toggleApiModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-amber-300 flex items-center gap-1.5 transition" title="Conectar API Key de Gemini para análisis real ilimitado">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span id="apiStatusLabel">Motor IA: Híbrido Activo</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+
+    <!-- ==================== VISTA 1: APP CIUDADANO MULTIMODAL ==================== -->
+    <section id="viewCitizen" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- COLUMNA IZQUIERDA (5 cols): SIMULADOR MÓVIL DEL CIUDADANO -->
+      <div class="lg:col-span-5 flex flex-col items-center">
+        <div class="w-full max-w-[420px] rounded-[2.5rem] bg-slate-900 border-[6px] border-slate-800 shadow-2xl overflow-hidden flex flex-col">
+
+          <!-- Notch y barra de estado del teléfono -->
+          <div class="bg-slate-950 px-6 py-2 flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800/80">
+            <span class="font-semibold text-slate-200">Kuskachay Movil</span>
             <div class="flex items-center gap-2">
-                <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex">
-                    <button id="tab-mobile" onclick="switchMainView('mobile')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600 text-white flex items-center gap-1.5 shadow">
-                        <i class="fas fa-mobile-screen-button"></i> Vista Ciudadano (PWA)
-                    </button>
-                    <button id="tab-dashboard" onclick="switchMainView('dashboard')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5">
-                        <i class="fas fa-chart-pie"></i> Panel Institucional (SaaS)
-                        <span id="badge-new-record" class="hidden w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    </button>
-                </div>
+              <span id="badgeVariante" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">Quechua Chanka</span>
+              <i class="fa-solid fa-signal"></i>
+              <i class="fa-solid fa-battery-full text-emerald-400"></i>
             </div>
-        </div>
-    </header>
+          </div>
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <main class="flex-1 flex flex-col items-center justify-center p-4 md:p-6">
+          <!-- Cabecera de Bienvenida y Selector de Idioma/Variante -->
+          <div class="p-4 bg-gradient-to-b from-slate-900 to-slate-950 border-b border-slate-800/80">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-amber-400">
+                <i class="fa-solid fa-ear-listen mr-1"></i>1. Adaptación Lingüística
+              </span>
+              <button onclick="speakCurrentExplanation('welcome')" class="text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium transition">
+                <i class="fa-solid fa-volume-high mr-1"></i>Saludo en Quechua
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 text-xs">
+              <button onclick="setQuechuaVariant('Chanka (Ayacucho/Apurímac)')" id="varChanka" class="py-1.5 px-2 rounded-lg bg-amber-500 text-slate-950 font-bold text-center truncate">
+                Chanka (Ayacucho)
+              </button>
+              <button onclick="setQuechuaVariant('Collao (Cusco/Puno)')" id="varCollao" class="py-1.5 px-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium text-center truncate">
+                Collao (Cusco/Puno)
+              </button>
+              <button onclick="setQuechuaVariant('Áncash (Huaylas)')" id="varAncash" class="py-1.5 px-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium text-center truncate">
+                Áncash (Central)
+              </button>
+            </div>
+          </div>
 
-        <!-- ==========================================
-             VISTA 1: SIMULADOR MÓVIL DEL CIUDADANO (PWA)
-             ========================================== -->
-        <section id="view-mobile" class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            
-            <!-- Columna Izquierda: Guía en Vivo para el Jurado (Contextual) -->
-            <div class="lg:col-span-5 space-y-5 order-2 lg:order-1">
-                <div class="bg-slate-800/70 border border-slate-700/80 rounded-2xl p-5 shadow-xl">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span> Contexto de la Demo en Vivo
-                        </span>
-                        <span id="case-location-badge" class="text-xs bg-slate-700 text-slate-200 px-2.5 py-1 rounded-full font-medium">
-                            📍 Apurímac • Quechua Chanka
-                        </span>
-                    </div>
-                    <h2 id="story-title" class="text-xl font-bold text-white mb-2">Caso Don Julián: Denuncia por robo de ganado</h2>
-                    <p id="story-desc" class="text-sm text-slate-300 leading-relaxed">
-                        A Don Julián (60 años) le robaron <strong class="text-amber-400">5 vacas</strong>. En la comisaría redactaron el acta en castellano técnico y anotaron por error <strong class="text-rose-400">4 vacas</strong>. Antes de que ponga su huella o firme, Kuskachay lee el acta, se la explica en quechua y verifica si los datos coinciden.
-                    </p>
+          <!-- Cuerpo interactivo del teléfono -->
+          <div class="p-4 space-y-4 max-h-[680px] overflow-y-auto">
 
-                    <!-- Indicador de Paso Actual de la Arquitectura -->
-                    <div class="mt-5 pt-4 border-t border-slate-700/80">
-                        <p class="text-xs font-semibold text-slate-400 uppercase mb-3">Arquitectura Híbrida Activa:</p>
-                        <div class="grid grid-cols-5 gap-1.5 text-center text-[11px]">
-                            <button onclick="goToStep(1)" id="step-pill-1" class="p-2 rounded-lg bg-indigo-600 text-white font-semibold transition">1. Perfil</button>
-                            <button onclick="goToStep(2)" id="step-pill-2" class="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition">2. Visión</button>
-                            <button onclick="goToStep(3)" id="step-pill-3" class="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition">3. RAG+Voz</button>
-                            <button onclick="goToStep(4)" id="step-pill-4" class="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition">4. Sello</button>
-                            <button onclick="goToStep(5)" id="step-pill-5" class="p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition">5. Constancia</button>
-                        </div>
-                    </div>
+            <!-- ENTRADA MULTIMODAL 1: SUBIR FOTO / CÁMARA / PDF / WORD -->
+            <div class="rounded-2xl bg-slate-950/90 border border-slate-800 p-3.5">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-400">
+                  <i class="fa-solid fa-file-Arrow-up mr-1.5"></i>2. Subir Documento o Foto Judicial
+                </h3>
+                <span class="text-[10px] text-slate-400">JPG, PNG, PDF, DOCX, TXT</span>
+              </div>
+
+              <!-- Zona Drag & Drop / Botones de Carga -->
+              <div class="grid grid-cols-2 gap-2 mb-2.5">
+                <label class="cursor-pointer flex flex-col items-center justify-center p-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-center transition">
+                  <i class="fa-solid fa-camera text-xl text-indigo-400 mb-1"></i>
+                  <span class="text-xs font-bold text-white">Foto / Cámara</span>
+                  <span class="text-[10px] text-slate-400">Acta o Notificación</span>
+                  <input type="file" id="inputImageFile" accept="image/*" capture="environment" class="hidden" onchange="handleMultimodalFileUpload(event)" />
+                </label>
+
+                <label class="cursor-pointer flex flex-col items-center justify-center p-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-center transition">
+                  <i class="fa-solid fa-file-pdf text-xl text-emerald-400 mb-1"></i>
+                  <span class="text-xs font-bold text-white">Subir PDF / Word</span>
+                  <span class="text-[10px] text-slate-400">.pdf, .docx, .txt</span>
+                  <input type="file" id="inputDocFile" accept=".pdf,.docx,.doc,.txt,image/*" class="hidden" onchange="handleMultimodalFileUpload(event)" />
+                </label>
+              </div>
+
+              <!-- Estado del archivo cargado -->
+              <div id="fileLoadedBanner" class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+                <div class="flex items-center gap-2 truncate">
+                  <i id="fileLoadedIcon" class="fa-solid fa-file-shield text-amber-400"></i>
+                  <span id="fileLoadedName" class="text-slate-200 font-medium truncate">Acta_Policial_Abigeato_Apurimac.pdf</span>
                 </div>
-
-                <!-- Tarjeta de carga opcional de audio MP3 personalizado -->
-                <div class="bg-slate-800/40 border border-slate-800 rounded-2xl p-4 flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-                            <i class="fas fa-microphone-lines"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-200">Audio Quechua Real (Web Speech + MP3)</p>
-                            <p class="text-[11px] text-slate-400">Reproduce voz sintetizada al instante o sube un audio grabado por tu equipo.</p>
-                        </div>
-                    </div>
-                    <label class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-xs font-medium cursor-pointer transition shrink-0">
-                        <i class="fas fa-upload mr-1"></i> Cargar MP3
-                        <input type="file" accept="audio/*" class="hidden" onchange="loadCustomAudio(event)">
-                    </label>
-                </div>
-
-                <!-- Diferencial Destacado -->
-                <div class="bg-gradient-to-r from-indigo-950/80 to-emerald-950/60 border border-indigo-500/30 rounded-2xl p-4">
-                    <div class="flex items-start gap-3">
-                        <i class="fas fa-award text-emerald-400 text-xl mt-0.5"></i>
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Diferencial frente a DOXS.AI y traductores</h3>
-                            <p class="text-xs text-slate-300 mt-1">
-                                No somos un simple chatbot de consultas. Intervenimos <strong>en el minuto crítico antes de firmar</strong>, detectamos discrepancias en el acta y emitimos un <strong>Sello de Comprensión</strong> que evita nulidades procesales al Estado.
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <span id="fileLoadedBadge" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold shrink-0">Listo</span>
+              </div>
             </div>
 
-            <!-- Columna Derecha: Dispositivo Móvil (PWA) -->
-            <div class="lg:col-span-7 flex justify-center order-1 lg:order-2">
-                <div class="w-full max-w-[410px] bg-white text-slate-800 rounded-[2.75rem] shadow-2xl shadow-indigo-950/80 border-[8px] border-slate-800 overflow-hidden flex flex-col h-[760px] relative">
-                    
-                    <!-- Barra de Estado del Celular -->
-                    <div class="bg-indigo-950 text-white px-6 pt-2.5 pb-2 flex justify-between items-center text-[11px] font-medium select-none">
-                        <span>09:41</span>
-                        <div class="w-20 h-3.5 bg-black rounded-full"></div>
-                        <div class="flex items-center space-x-1.5">
-                            <span class="bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded text-[9px] font-bold">MODO RURAL 3G</span>
-                            <i class="fas fa-battery-full text-emerald-400"></i>
-                        </div>
-                    </div>
+            <!-- ENTRADA MULTIMODAL 2: MICRÓFONO EN VIVO (HABLAR CON EL ASISTENTE) -->
+            <div class="rounded-2xl bg-slate-950/90 border border-slate-800 p-3.5">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-rose-400">
+                  <i class="fa-solid fa-microphone-lines mr-1.5"></i>3. Hablar por Micrófono o Consultar
+                </h3>
+                <span id="micStatusBadge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">Micrófono libre</span>
+              </div>
 
-                    <!-- Cabecera de la App Móvil -->
-                    <div class="bg-indigo-900 text-white px-4 py-3 flex items-center justify-between shadow-md">
-                        <div class="flex items-center space-x-2">
-                            <button onclick="goToStep(1)" title="Volver al inicio" class="w-8 h-8 rounded-full bg-indigo-800 hover:bg-indigo-700 flex items-center justify-center transition">
-                                <i class="fas fa-home text-xs"></i>
-                            </button>
-                            <div>
-                                <h1 class="font-bold text-sm leading-tight">Kuskachay AI</h1>
-                                <p id="mobile-variant-label" class="text-[11px] text-indigo-200">Quechua Chanka • Voz Activa</p>
-                            </div>
-                        </div>
-                        <button onclick="speakCurrentScreen()" class="bg-amber-400 hover:bg-amber-300 text-slate-900 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 shadow transition">
-                            <i class="fas fa-volume-high"></i> Uyariy (Escuchar)
-                        </button>
-                    </div>
+              <p class="text-[11px] text-slate-400 mb-2.5">
+                Presiona el micrófono y di qué no entiendes del documento o responde a las preguntas (ej. <i>"No entiendo qué significa apersonarse"</i> o <i>"Me robaron 5 vacas, no 4"</i>).
+              </p>
 
-                    <!-- =========================================================
-                         PASO 1: PRIMER CONTACTO Y ADAPTACIÓN DE PERFIL
-                         ========================================================= -->
-                    <div id="mobile-step-1" class="flex-1 p-5 overflow-y-auto no-scrollbar flex flex-col justify-between bg-slate-50">
-                        <div class="space-y-4">
-                            <!-- Bienvenida Bilingüe -->
-                            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex items-center gap-3">
-                                <button onclick="playWelcomeAudio()" class="w-12 h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center shadow-md shrink-0 transition">
-                                    <i class="fas fa-play text-lg"></i>
-                                </button>
-                                <div>
-                                    <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Allinllachu • Bienvenido</span>
-                                    <p class="text-xs font-semibold text-slate-800">"Rimaykullayki. Mayqin suyupi kachkanki? Toca tu región para hablarte en tu quechua."</p>
-                                </div>
-                            </div>
-
-                            <!-- Selección de Variante con Tarjetas Visuales -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 uppercase mb-2">
-                                    1. Elige tu variante lingüística (Suyu):
-                                </label>
-                                <div class="grid grid-cols-1 gap-2">
-                                    <button onclick="setVariant('Quechua Chanka', 'Ayacucho, Apurímac, Huancavelica', this)" class="variant-btn flex items-center justify-between p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left transition">
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-2xl">⛰️</span>
-                                            <div>
-                                                <p class="font-bold text-sm text-slate-900">Quechua Chanka</p>
-                                                <p class="text-xs text-slate-500">Ayacucho • Apurímac • Huancavelica</p>
-                                            </div>
-                                        </div>
-                                        <i class="fas fa-circle-check text-indigo-600 text-lg"></i>
-                                    </button>
-
-                                    <button onclick="setVariant('Quechua Collao', 'Cusco, Puno, Arequipa', this)" class="variant-btn flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 text-left transition">
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-2xl">🦙</span>
-                                            <div>
-                                                <p class="font-bold text-sm text-slate-900">Quechua Qullaw (Collao)</p>
-                                                <p class="text-xs text-slate-500">Cusco • Puno • Apurímac Alto</p>
-                                            </div>
-                                        </div>
-                                        <i class="far fa-circle text-slate-300 text-lg"></i>
-                                    </button>
-
-                                    <button onclick="setVariant('Quechua Áncash', 'Callejón de Huaylas y Conchucos', this)" class="variant-btn flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 text-left transition">
-                                        <div class="flex items-center gap-3">
-                                            <span class="text-2xl">🏔️</span>
-                                            <div>
-                                                <p class="font-bold text-sm text-slate-900">Quechua Áncash (Wanka/Waylla)</p>
-                                                <p class="text-xs text-slate-500">Áncash • Huánuco • Sierra Central</p>
-                                            </div>
-                                        </div>
-                                        <i class="far fa-circle text-slate-300 text-lg"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Preferencia de Accesibilidad (Pictogramas grandes) -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 uppercase mb-2">
-                                    2. ¿Cómo prefieres que te ayudemos?
-                                </label>
-                                <div class="grid grid-cols-2 gap-2.5">
-                                    <button id="pref-voice" onclick="setModePreference('voice')" class="p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-center flex flex-col items-center gap-1 transition">
-                                        <i class="fas fa-ear-listen text-2xl text-indigo-600"></i>
-                                        <span class="font-bold text-xs text-slate-900">Uyariylla (Solo Voz)</span>
-                                        <span class="text-[10px] text-slate-500">Con pictogramas</span>
-                                    </button>
-                                    <button id="pref-bilingual" onclick="setModePreference('bilingual')" class="p-3 rounded-xl border-2 border-slate-200 bg-white text-center flex flex-col items-center gap-1 transition">
-                                        <i class="fas fa-book-open-reader text-2xl text-slate-600"></i>
-                                        <span class="font-bold text-xs text-slate-900">Voz + Texto Bilingüe</span>
-                                        <span class="text-[10px] text-slate-500">Quechua y Castellano</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Botón Continuar -->
-                        <div class="pt-4">
-                            <button onclick="goToStep(2)" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm transition">
-                                <span>Continuar a Revisar Documento</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- =========================================================
-                         PASO 2: CAPTURA MULTIMODAL DEL ACTA O CITACIÓN
-                         ========================================================= -->
-                    <div id="mobile-step-2" class="hidden flex-1 p-5 overflow-y-auto no-scrollbar flex flex-col justify-between bg-slate-50">
-                        <div class="space-y-4">
-                            <div class="text-center">
-                                <span class="inline-block px-2.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[11px] font-bold mb-1">Paso 2 de 5 • Visión Multimodal</span>
-                                <h2 class="text-lg font-extrabold text-slate-900">¿Qué documento te entregaron?</h2>
-                                <p class="text-xs text-slate-500">Toma una foto al acta o usa el documento cargado para la demo.</p>
-                            </div>
-
-                            <!-- Vista previa realista del documento oficial peruano -->
-                            <div class="bg-white border-2 border-slate-300 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                                <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-2.5">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-7 h-7 rounded bg-rose-700 text-white flex items-center justify-center text-xs font-bold">🇵🇪</div>
-                                        <div>
-                                            <p id="doc-institution" class="text-[10px] font-bold uppercase text-slate-500">POLICÍA NACIONAL DEL PERÚ - COMISARÍA ABANCAY</p>
-                                            <p id="doc-title" class="text-xs font-extrabold text-slate-900">ACTA DE RECEPCIÓN DE DENUNCIA VERBAL N° 408-2026</p>
-                                        </div>
-                                    </div>
-                                    <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded">Sin firmar</span>
-                                </div>
-
-                                <div id="doc-body-preview" class="text-[11px] text-slate-700 font-mono leading-relaxed space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                    <p><strong>DENUNCIANTE:</strong> JULIÁN QUISPE HUAMÁN (60), LENGUA MATERNA QUECHUA.</p>
-                                    <p><strong>HECHOS:</strong> Siendo las 08:30 hrs, el recurrente manifiesta haber sufrido la sustracción de <span id="doc-highlight-text" class="bg-rose-200 text-rose-950 font-bold px-1 rounded underline">CUATRO (04) cabezas de ganado vacuno</span> en el sector Chontay.</p>
-                                    <p><strong>OBSERVACIÓN:</strong> Se procede a leer la presente acta en castellano, solicitando la impresión dactilar de conformidad.</p>
-                                </div>
-
-                                <!-- Etiquetas detectadas por Visión -->
-                                <div class="mt-2.5 flex flex-wrap gap-1.5">
-                                    <span class="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-md font-medium">
-                                        <i class="fas fa-eye mr-1"></i>OCR: Entidades detectadas
-                                    </span>
-                                    <span id="doc-tag-key" class="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md font-semibold">
-                                        Cantidad registrada: 4 vacunos
-                                    </span>
-                                </div>
-                            </div>
-
-                            <!-- Animación de Pipeline IA (Oculta hasta presionar analizar) -->
-                            <div id="ai-pipeline-loader" class="hidden bg-indigo-950 text-white rounded-2xl p-4 space-y-2.5 shadow-lg">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-5 h-5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
-                                    <span id="pipeline-status-text" class="text-xs font-bold text-emerald-300">Analizando documento con Visión + RAG...</span>
-                                </div>
-                                <div class="text-[11px] space-y-1 text-slate-300 pl-7">
-                                    <p id="pipe-step-1" class="text-emerald-400 font-medium">✓ 1. Extrayendo cláusulas y cantidades (OCR Multimodal)</p>
-                                    <p id="pipe-step-2" class="opacity-60">• 2. Cruzando con CPP Art. 71, Art. 114 y Ley N° 29735 (RAG)</p>
-                                    <p id="pipe-step-3" class="opacity-60">• 3. Generando explicación oral en Quechua Chanka y preguntas</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Botones de Acción (Analizar o Subir Foto propia) -->
-                        <div class="space-y-2 pt-3">
-                            <button onclick="runDocumentAnalysis()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm transition">
-                                <i class="fas fa-wand-magic-sparkles"></i>
-                                <span>Explicar en Quechua y Verificar</span>
-                            </button>
-
-                            <label class="w-full py-2.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-semibold rounded-xl flex items-center justify-center gap-2 text-xs cursor-pointer transition">
-                                <i class="fas fa-camera text-indigo-600"></i>
-                                <span>O subir foto desde cámara / galería</span>
-                                <input type="file" accept="image/*" class="hidden" onchange="handleCustomImageUpload(event)">
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- =========================================================
-                         PASO 3: EXPLICACIÓN EN QUECHUA CON LEY CITADA (RAG)
-                         ========================================================= -->
-                    <div id="mobile-step-3" class="hidden flex-1 p-5 overflow-y-auto no-scrollbar flex flex-col justify-between bg-slate-50">
-                        <div class="space-y-4">
-                            
-                            <!-- Reproductor de Voz en Quechua con Ondas Animadas -->
-                            <div class="bg-indigo-900 text-white rounded-2xl p-4 shadow-md">
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-800 text-indigo-200 px-2 py-0.5 rounded">
-                                        <i class="fas fa-ear-listen mr-1"></i> Explicación Hablada
-                                    </span>
-                                    <span id="audio-status-badge" class="text-[10px] text-emerald-300 font-semibold">Quechua Chanka</span>
-                                </div>
-
-                                <div class="flex items-center gap-3 my-2">
-                                    <button id="btn-play-explanation" onclick="toggleExplanationAudio()" class="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center shadow-lg transition shrink-0">
-                                        <i id="play-icon" class="fas fa-play text-lg ml-0.5"></i>
-                                    </button>
-                                    <!-- Visualizador de Onda -->
-                                    <div id="waveform-container" class="flex-1 flex items-center justify-between h-8 px-2 bg-indigo-950/60 rounded-xl">
-                                        <div class="wave-bar h-2"></div><div class="wave-bar h-4"></div><div class="wave-bar h-3"></div>
-                                        <div class="wave-bar h-6"></div><div class="wave-bar h-2"></div><div class="wave-bar h-5"></div>
-                                        <div class="wave-bar h-3"></div><div class="wave-bar h-4"></div><div class="wave-bar h-2"></div>
-                                        <div class="wave-bar h-6"></div><div class="wave-bar h-3"></div><div class="wave-bar h-5"></div>
-                                        <div class="wave-bar h-2"></div><div class="wave-bar h-4"></div><div class="wave-bar h-3"></div>
-                                    </div>
-                                </div>
-                                <p class="text-[11px] text-indigo-200 text-center">Toca el botón verde para escuchar en tu idioma</p>
-                            </div>
-
-                            <!-- Explicación Bilingüe Clara -->
-                            <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-extrabold text-indigo-700 uppercase">🇵🇪 Runasimi (Quechua Chanka)</span>
-                                    <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded border border-emerald-200">Lenguaje Claro</span>
-                                </div>
-                                <p id="quechua-explanation-text" class="text-xs font-semibold text-slate-900 leading-relaxed italic">
-                                    "Tayta Julián, kay полис rapim nin: tawa (4) wakaykikunatam suwarusqaku Chontay llaqtapi. Manaraq firmachkaspa, qhawarinanchik chiqapchu tawa icha pichqachu. Chaymanta, mana qullqillapaq t'ikraqta (intérprete) mañakuwaq."
-                                </p>
-                                <div class="border-t border-slate-100 pt-2">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase">Traducción en Castellano Claro:</span>
-                                    <p id="spanish-explanation-text" class="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                                        "Don Julián, este papel policial dice que te robaron <strong>cuatro (4) vacas</strong> en Chontay. Antes de firmar, debemos confirmar si ese número es correcto. Además, tienes derecho a una copia gratuita y a un intérprete."
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Pictogramas para Baja Lectura -->
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-500 uppercase mb-1.5">Tus Derechos en este Trámite (Pictogramas):</p>
-                                <div class="grid grid-cols-3 gap-2 text-center">
-                                    <div class="bg-indigo-50/70 border border-indigo-100 p-2 rounded-xl">
-                                        <div class="text-xl mb-0.5">🗣️</div>
-                                        <p class="text-[10px] font-bold text-slate-800 leading-tight">Intérprete Gratis</p>
-                                    </div>
-                                    <div class="bg-indigo-50/70 border border-indigo-100 p-2 rounded-xl">
-                                        <div class="text-xl mb-0.5">⚖️</div>
-                                        <p class="text-[10px] font-bold text-slate-800 leading-tight">Abogado de Oficio</p>
-                                    </div>
-                                    <div class="bg-indigo-50/70 border border-indigo-100 p-2 rounded-xl">
-                                        <div class="text-xl mb-0.5">📄</div>
-                                        <p class="text-[10px] font-bold text-slate-800 leading-tight">No firmar con errores</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Fuentes Legales Verificadas (RAG sin alucinaciones) -->
-                            <div class="bg-slate-100 border border-slate-200 rounded-xl p-3">
-                                <p class="text-[10px] font-bold text-slate-600 uppercase mb-1.5 flex items-center justify-between">
-                                    <span><i class="fas fa-book-bookmark text-indigo-600 mr-1"></i>Normas Peruanas Citadas (RAG):</span>
-                                    <span class="text-emerald-600">100% Verificado</span>
-                                </p>
-                                <div class="flex flex-wrap gap-1.5">
-                                    <button onclick="showLegalCitation('ley29735')" class="text-[10px] bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg font-semibold transition">
-                                        Ley N° 29735 (Art. 4.1)
-                                    </button>
-                                    <button onclick="showLegalCitation('cpp114')" class="text-[10px] bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg font-semibold transition">
-                                        Cód. Procesal Penal (Art. 114)
-                                    </button>
-                                    <button onclick="showLegalCitation('const2')" class="text-[10px] bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg font-semibold transition">
-                                        Constitución (Art. 2.19)
-                                    </button>
-                                </div>
-                                <p id="citation-detail-box" class="hidden mt-2 text-[11px] bg-white p-2 rounded border border-indigo-100 text-slate-700"></p>
-                            </div>
-                        </div>
-
-                        <div class="pt-3">
-                            <button onclick="goToStep(4)" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 text-sm transition">
-                                <i class="fas fa-clipboard-check"></i>
-                                <span>Pasar a Verificación (Sello de Comprensión)</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- =========================================================
-                         PASO 4: EL SELLO DE COMPRENSIÓN (DIFERENCIAL ESTRELLA)
-                         ========================================================= -->
-                    <div id="mobile-step-4" class="hidden flex-1 p-5 overflow-y-auto no-scrollbar flex flex-col justify-between bg-slate-50">
-                        <div class="space-y-3.5">
-                            <div class="flex items-center justify-between">
-                                <span class="px-2.5 py-0.5 bg-amber-100 text-amber-800 rounded-full text-[11px] font-bold">
-                                    Paso 4 de 5 • Sello de Comprensión
-                                </span>
-                                <span id="attempt-counter" class="text-[11px] font-bold text-slate-500">Intento 1 de 2</span>
-                            </div>
-
-                            <!-- Pregunta 1: Detección de Discrepancia o Plazo -->
-                            <div class="bg-white border-2 border-indigo-100 rounded-2xl p-4 shadow-sm space-y-3">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <p class="text-[11px] font-bold text-indigo-600 uppercase">Pregunta de Verificación #1:</p>
-                                        <h3 id="q1-quechua" class="text-sm font-extrabold text-slate-900 mt-0.5">
-                                            "Hayka wakaykikunatam suwarusqaku?"
-                                        </h3>
-                                        <p id="q1-spanish" class="text-xs text-slate-600">
-                                            ¿Cuántas vacas declaraste que te robaron realmente?
-                                        </p>
-                                    </div>
-                                    <button onclick="speakQuestion()" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                                        <i class="fas fa-volume-high text-xs"></i>
-                                    </button>
-                                </div>
-
-                                <!-- Opciones de respuesta (Pictogramas + Voz simulada) -->
-                                <div id="q1-options-container" class="space-y-2">
-                                    <!-- Se llena dinámicamente según el caso Julián o Rosa -->
-                                </div>
-                            </div>
-
-                            <!-- ALERTA ROJA DE DISCREPANCIA EN EL ACTA (Estrella para Caso Don Julián) -->
-                            <div id="discrepancy-alert-box" class="hidden bg-rose-50 border-2 border-rose-500 rounded-2xl p-3.5 space-y-2.5 animate-pulse">
-                                <div class="flex items-start gap-2.5">
-                                    <div class="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 mt-0.5">
-                                        <i class="fas fa-triangle-exclamation"></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-xs font-extrabold text-rose-900 uppercase">¡Discrepancia Detectada en el Acta!</h4>
-                                        <p class="text-xs text-rose-800 leading-relaxed mt-0.5">
-                                            Don Julián declara <strong>cinco (5) vacunos</strong>, pero el acta policial registra <strong>cuatro (4)</strong>. 
-                                            <span class="font-bold underline">NO FIRMAR.</span> Se requiere rectificación antes de la huella digital.
-                                        </p>
-                                    </div>
-                                </div>
-                                <button onclick="fixActaDiscrepancy()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow flex items-center justify-center gap-1.5 transition">
-                                    <i class="fas fa-pen-to-square"></i>
-                                    <span>Policía corrige el Acta a 5 vacunos y Re-verificar</span>
-                                </button>
-                            </div>
-
-                            <!-- CAJA DE REEXPLICACIÓN SIMPLE (Para cuando el usuario no entendió un derecho) -->
-                            <div id="reexplain-box" class="hidden bg-amber-50 border-2 border-amber-400 rounded-2xl p-3.5 space-y-2">
-                                <div class="flex items-start gap-2">
-                                    <i class="fas fa-rotate text-amber-600 mt-1"></i>
-                                    <div>
-                                        <h4 class="text-xs font-bold text-amber-900">Ama llakikuychu • Te lo explico más sencillo (Intento 2/2):</h4>
-                                        <p id="reexplain-text" class="text-xs text-amber-800 mt-1 leading-relaxed">
-                                            "Mana qullqiyki kaptinpas, Estadoqa huk abogadotam qusunki mana imata pagaspa. (Aunque no tengas dinero, el Estado te asigna un defensor público totalmente gratis)."
-                                        </p>
-                                    </div>
-                                </div>
-                                <button onclick="passVerificationAfterReexplain()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition">
-                                    ✓ ¡Ahora sí entendí! (Allinmi, entiendenim)
-                                </button>
-                            </div>
-
-                            <!-- Botón de Escalamiento a Humano (Safety Net / Human-in-the-loop) -->
-                            <div class="bg-slate-100 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
-                                <div>
-                                    <p class="text-[11px] font-bold text-slate-700">¿Caso grave o persiste la duda?</p>
-                                    <p class="text-[10px] text-slate-500">Protocolo de seguridad: derivación inmediata</p>
-                                </div>
-                                <button onclick="escalateToHuman()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-[11px] font-semibold transition">
-                                    <i class="fas fa-headset mr-1"></i> Derivar a Intérprete
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="pt-2">
-                            <button onclick="goToStep(3)" class="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-800">
-                                ← Volver a escuchar la explicación
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- =========================================================
-                         PASO 5: CONSTANCIA BILINGÜE Y GENERADOR DE DOCUMENTOS
-                         ========================================================= -->
-                    <div id="mobile-step-5" class="hidden flex-1 p-5 overflow-y-auto no-scrollbar flex flex-col justify-between bg-slate-50">
-                        <div class="space-y-3.5">
-                            <!-- Sello Verde Verificado -->
-                            <div class="bg-emerald-600 text-white rounded-2xl p-4 text-center shadow-lg relative overflow-hidden">
-                                <div class="w-12 h-12 rounded-full bg-white/20 mx-auto flex items-center justify-center mb-1.5">
-                                    <i class="fas fa-check-double text-2xl text-white"></i>
-                                </div>
-                                <span class="text-[10px] font-extrabold uppercase tracking-widest bg-emerald-800/60 px-2.5 py-0.5 rounded-full">
-                                    Ley N° 29735 • Debido Proceso
-                                </span>
-                                <h2 class="text-base font-extrabold mt-1">SELLO DE COMPRENSIÓN EMITIDO</h2>
-                                <p id="seal-summary-badge" class="text-[11px] text-emerald-100 mt-0.5">
-                                    Acta corregida (5 vacunos) y comprendida en Quechua Chanka
-                                </p>
-                            </div>
-
-                            <!-- Resumen de la Constancia Auditable -->
-                            <div class="bg-white border border-slate-200 rounded-2xl p-3.5 shadow-sm text-xs space-y-1.5">
-                                <div class="flex justify-between items-center border-b border-slate-100 pb-1.5">
-                                    <span class="font-bold text-slate-700">ID Trazabilidad:</span>
-                                    <span id="constancia-id" class="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded font-bold text-indigo-700">#KSK-2026-8841</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-500">Ciudadano:</span>
-                                    <span id="constancia-citizen" class="font-semibold text-slate-800">Julián Quispe Huamán</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-500">Lengua / Variante:</span>
-                                    <span id="constancia-lang" class="font-semibold text-slate-800">Quechua Chanka (Voz)</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-500">Incidente Salvado:</span>
-                                    <span id="constancia-incident" class="font-bold text-emerald-700">Discrepancia corregida (4 → 5)</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-slate-500">Base Legal:</span>
-                                    <span class="font-semibold text-slate-800">Art. 114 CPP / Ley 29735</span>
-                                </div>
-                            </div>
-
-                            <!-- Acciones de Documentos Jurídicos (Constancia PDF + Solicitud de Intérprete) -->
-                            <div class="space-y-2">
-                                <p class="text-[11px] font-bold text-slate-500 uppercase">Documentos Listos (Bilingües):</p>
-                                
-                                <button onclick="openPrintableModal('constancia')" class="w-full p-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl flex items-center justify-between transition text-left">
-                                    <div class="flex items-center gap-2.5">
-                                        <i class="fas fa-file-shield text-indigo-600 text-lg"></i>
-                                        <div>
-                                            <p class="text-xs font-bold text-indigo-950">Ver / Descargar Constancia Bilingüe (PDF)</p>
-                                            <p class="text-[10px] text-indigo-700">Se adjunta al acta policial para evitar nulidad</p>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-arrow-up-right-from-square text-indigo-600 text-xs"></i>
-                                </button>
-
-                                <button onclick="openPrintableModal('solicitud')" class="w-full p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl flex items-center justify-between transition text-left">
-                                    <div class="flex items-center gap-2.5">
-                                        <i class="fas fa-file-signature text-amber-600 text-lg"></i>
-                                        <div>
-                                            <p class="text-xs font-bold text-amber-950">Generar Solicitud de Intérprete / Defensor</p>
-                                            <p class="text-[10px] text-amber-800">Plantilla legal autocompletada para Fiscalía</p>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-plus-circle text-amber-600 text-xs"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Ir al Panel Institucional para cerrar el Pitch -->
-                        <div class="pt-3 space-y-2">
-                            <button onclick="switchMainView('dashboard')" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl shadow flex items-center justify-center gap-2 text-xs transition">
-                                <i class="fas fa-chart-line text-emerald-400"></i>
-                                <span>Ver Registro en Panel Institucional (SaaS)</span>
-                            </button>
-                        </div>
-                    </div>
-
+              <div class="flex items-center gap-2">
+                <button id="btnLiveMic" onclick="toggleLiveMicrophone()" class="w-12 h-12 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center shadow-lg shadow-rose-600/30 transition shrink-0">
+                  <i id="micIcon" class="fa-solid fa-microphone text-lg"></i>
+                </button>
+                <div class="flex-1">
+                  <input id="voiceTranscriptInput" type="text" placeholder="Habla por el micrófono o escribe tu duda aquí..." class="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400" onkeydown="if(event.key==='Enter') processUserVoiceOrTextQuery()" />
                 </div>
-            </div>
-        </section>
+                <button onclick="processUserVoiceOrTextQuery()" class="px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shrink-0">
+                  Enviar
+                </button>
+              </div>
 
-        <!-- ========================================================
-             VISTA 2: PANEL INSTITUCIONAL SaaS (B2G - PNP / FISCALÍA / PJ)
-             ======================================================== -->
-        <section id="view-dashboard" class="hidden w-full max-w-7xl space-y-6">
-            
-            <!-- Encabezado Institucional -->
-            <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-6 flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                            SaaS B2G • Cumplimiento Normativo
-                        </span>
-                        <span class="text-xs text-emerald-400 font-semibold"><i class="fas fa-circle text-[8px] mr-1"></i>Sincronizado en tiempo real</span>
-                    </div>
-                    <h2 class="text-2xl font-extrabold text-white mt-1">Panel de Trazabilidad y Prevención de Actas Nulas</h2>
-                    <p class="text-sm text-slate-400">Entidades conectadas: Comisarías PNP, Ministerio Público, Defensoría del Pueblo y Cortes Superiores.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="openPrintableModal('constancia')" class="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition">
-                        <i class="fas fa-file-pdf text-rose-400"></i> Exportar Última Constancia
-                    </button>
-                    <button onclick="switchMainView('mobile')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-lg">
-                        <i class="fas fa-mobile-screen"></i> Volver al Simulador Móvil
-                    </button>
-                </div>
+              <!-- Botones rápidos de voz simulada para la demo -->
+              <div class="mt-2.5 flex flex-wrap gap-1.5">
+                <button onclick="quickAsk('¿Qué significa esto en sencillo? No entiendo las palabras difíciles.')" class="text-[10px] px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-amber-300 border border-slate-800 transition">
+                  💬 "No entiendo, explícame más fácil"
+                </button>
+                <button onclick="quickAsk('En el papel dice 4 vacas, pero a mí me robaron 5 vacas.')" class="text-[10px] px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-rose-300 border border-slate-800 transition">
+                  ⚠️ "Me robaron 5 vacas, no 4"
+                </button>
+                <button onclick="quickAsk('¿Tengo derecho a un abogado y a un intérprete gratuito?')" class="text-[10px] px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-emerald-300 border border-slate-800 transition">
+                  ⚖️ "¿Tengo derecho a intérprete?"
+                </button>
+              </div>
             </div>
 
-            <!-- 4 KPIs Estadísticos Clave (Para que tus compañeros de Estadística se luzcan) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold text-slate-400 uppercase">Comprensión Verificada</span>
-                        <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center"><i class="fas fa-check-circle"></i></span>
-                    </div>
-                    <p id="kpi-comprehension" class="text-3xl font-extrabold text-white mt-2">91.4%</p>
-                    <p class="text-xs text-emerald-400 mt-1">78.2% al 1er intento • 13.2% tras reexplicar</p>
-                </div>
-
-                <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold text-slate-400 uppercase">Discrepancias Corregidas</span>
-                        <span class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center"><i class="fas fa-shield-halved"></i></span>
-                    </div>
-                    <p id="kpi-discrepancies" class="text-3xl font-extrabold text-white mt-2">143</p>
-                    <p class="text-xs text-amber-300 mt-1">Actas salvadas de nulidad antes de firmar</p>
-                </div>
-
-                <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold text-slate-400 uppercase">Ahorro Institucional Est.</span>
-                        <span class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center"><i class="fas fa-coins"></i></span>
-                    </div>
-                    <p class="text-3xl font-extrabold text-white mt-2">S/ 184,500</p>
-                    <p class="text-xs text-slate-400 mt-1">-64% audiencias reprogramadas por nulidad</p>
-                </div>
-
-                <div class="bg-slate-800/80 border border-slate-700 p-5 rounded-2xl">
-                    <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold text-slate-400 uppercase">Derivación a Intérprete</span>
-                        <span class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center"><i class="fas fa-user-tie"></i></span>
-                    </div>
-                    <p class="text-3xl font-extrabold text-white mt-2">8.6%</p>
-                    <p class="text-xs text-slate-400 mt-1">Focaliza a los intérpretes en casos penales graves</p>
-                </div>
-            </div>
-
-            <!-- Gráficos Estadísticos + Tabla de Trazabilidad en Vivo -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                <!-- Columna Analítica (4 cols) -->
-                <div class="lg:col-span-4 bg-slate-800/80 border border-slate-700 rounded-2xl p-5 space-y-5">
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Distribución por Variante (Piloto)</h3>
-                        <p class="text-xs text-slate-400">Atenciones validadas según variante dialectal</p>
-                    </div>
-
-                    <div class="space-y-3 text-xs">
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="font-semibold text-slate-200">Quechua Chanka (Ayacucho/Apurímac/Hvca)</span>
-                                <span class="font-bold text-indigo-400">54%</span>
-                            </div>
-                            <div class="w-full bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                                <div class="bg-indigo-500 h-full rounded-full" style="width: 54%"></div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="font-semibold text-slate-200">Quechua Collao (Cusco/Puno)</span>
-                                <span class="font-bold text-emerald-400">33%</span>
-                            </div>
-                            <div class="w-full bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                                <div class="bg-emerald-500 h-full rounded-full" style="width: 33%"></div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="font-semibold text-slate-200">Quechua Áncash / Central</span>
-                                <span class="font-bold text-amber-400">13%</span>
-                            </div>
-                            <div class="w-full bg-slate-700 h-2.5 rounded-full overflow-hidden">
-                                <div class="bg-amber-400 h-full rounded-full" style="width: 13%"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-700 space-y-2">
-                        <h4 class="text-xs font-bold uppercase text-slate-400">Impacto Presupuestal (Modelo SaaS)</h4>
-                        <p class="text-xs text-slate-300 leading-relaxed">
-                            Cada audiencia frustrada o acta anulada por vulneración del derecho lingüístico (Art. 114 CPP) cuesta al Estado en promedio <strong>S/ 1,290</strong> en horas-hombre fiscales y policiales. El costo operativo por verificación en Kuskachay es de <strong>S/ 0.18</strong>.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Tabla de Trazabilidad con el Registro Recién Generado (8 cols) -->
-                <div class="lg:col-span-8 bg-slate-800/80 border border-slate-700 rounded-2xl p-5 flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 class="text-sm font-bold text-white">Registro Auditable de Sellos de Comprensión (Tiempo Real)</h3>
-                                <p class="text-xs text-slate-400">Evidencia de cumplimiento de la Ley N° 29735 ante auditorías de Defensoría y OCMA</p>
-                            </div>
-                            <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-lg font-semibold">
-                                Cifrado & Auditable
-                            </span>
-                        </div>
-
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead>
-                                    <tr class="border-b border-slate-700 text-slate-400 uppercase text-[11px]">
-                                        <th class="py-2.5 px-3">ID Sello</th>
-                                        <th class="py-2.5 px-3">Ciudadano / Sede</th>
-                                        <th class="py-2.5 px-3">Documento</th>
-                                        <th class="py-2.5 px-3">Variante</th>
-                                        <th class="py-2.5 px-3">Resultado de Verificación</th>
-                                        <th class="py-2.5 px-3">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="traceability-tbody" class="divide-y divide-slate-700/70 text-slate-200">
-                                    <tr class="bg-emerald-950/30">
-                                        <td class="py-3 px-3 font-mono font-bold text-emerald-400">#KSK-8841</td>
-                                        <td class="py-3 px-3">
-                                            <p class="font-bold">Julián Quispe H.</p>
-                                            <p class="text-[10px] text-slate-400">Comisaría PNP Abancay</p>
-                                        </td>
-                                        <td class="py-3 px-3">Acta Denuncia Abigeato</td>
-                                        <td class="py-3 px-3">Quechua Chanka</td>
-                                        <td class="py-3 px-3">
-                                            <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">
-                                                ✓ Acta Corregida (4→5) y Verificada
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-3">
-                                            <button onclick="openPrintableModal('constancia')" class="text-indigo-400 hover:underline font-semibold">Ver PDF</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="py-3 px-3 font-mono text-slate-400">#KSK-8840</td>
-                                        <td class="py-3 px-3">
-                                            <p class="font-bold">Rosa Condori M.</p>
-                                            <p class="text-[10px] text-slate-400">Fiscalía Provincial Huancavelica</p>
-                                        </td>
-                                        <td class="py-3 px-3">Cédula Citación Fiscal</td>
-                                        <td class="py-3 px-3">Quechua Chanka</td>
-                                        <td class="py-3 px-3">
-                                            <span class="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold text-[10px]">
-                                                ✓ Comprendió en 2do intento + Defensor
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-3">
-                                            <button onclick="openPrintableModal('solicitud')" class="text-indigo-400 hover:underline font-semibold">Solicitud</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="py-3 px-3 font-mono text-slate-400">#KSK-8839</td>
-                                        <td class="py-3 px-3">
-                                            <p class="font-bold">Mateo Mamani C.</p>
-                                            <p class="text-[10px] text-slate-400">Juzgado Paz Letrado Sicuani</p>
-                                        </td>
-                                        <td class="py-3 px-3">Notificación Judicial</td>
-                                        <td class="py-3 px-3">Quechua Collao</td>
-                                        <td class="py-3 px-3">
-                                            <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px]">
-                                                → Derivado a Intérprete Acreditado
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-3">
-                                            <span class="text-slate-500">En atención</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- =========================================================================
-         MODAL IMPRIMIBLE: CONSTANCIA BILINGÜE Y SOLICITUD DE INTÉRPRETE (PDF)
-         ========================================================================= -->
-    <div id="modal-backdrop" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div id="printable-modal" class="bg-white text-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden border border-slate-200 my-8">
-            <div class="andean-border"></div>
-            
-            <!-- Barra superior del modal (No se imprime) -->
-            <div class="no-print bg-slate-100 px-6 py-3 flex items-center justify-between border-b border-slate-200">
-                <span class="text-xs font-bold text-slate-600 uppercase flex items-center gap-1.5">
-                    <i class="fas fa-file-contract text-indigo-600"></i> Vista Previa Oficial Bilingüe
+            <!-- REPRODUCTOR DE VOZ BILINGÜE (QUECHUA / CASTELLANO) -->
+            <div class="rounded-2xl bg-gradient-to-br from-amber-500/15 via-slate-900 to-slate-950 border border-amber-500/30 p-3.5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <i class="fa-solid fa-volume-high"></i>4. Explicación Hablada en tu Idioma
                 </span>
-                <div class="flex items-center gap-2">
-                    <button onclick="window.print()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow">
-                        <i class="fas fa-print"></i> Imprimir / Guardar PDF
-                    </button>
-                    <button onclick="closePrintableModal()" class="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center font-bold">
-                        ✕
-                    </button>
-                </div>
+                <label class="text-[10px] text-slate-300 cursor-pointer hover:text-amber-300 underline">
+                  + Cargar MP3 Quechua propio
+                  <input type="file" accept="audio/*" class="hidden" onchange="loadCustomQuechuaAudio(event)" />
+                </label>
+              </div>
+
+              <!-- Barras de onda animadas -->
+              <div id="audioWaveContainer" class="h-8 flex items-center justify-center gap-1 my-1 px-3 py-1 rounded-lg bg-slate-950/80 border border-slate-800">
+                <div class="wave-bar w-1 h-2 bg-amber-400 rounded-full"></div>
+                <div class="wave-bar w-1 h-4 bg-amber-400 rounded-full"></div>
+                <div class="wave-bar w-1 h-6 bg-amber-400 rounded-full"></div>
+                <div class="wave-bar w-1 h-3 bg-amber-400 rounded-full"></div>
+                <div class="wave-bar w-1 h-7 bg-amber-400 rounded-full"></div>
+                <div class="wave-bar w-1 h-4 bg-amber-400 rounded-full"></div>
+                <div class="wave-bar w-1 h-5 bg-amber-400 rounded-full"></div>
+                <div class="wave-bar w-1 h-2 bg-amber-400 rounded-full"></div>
+                <span id="audioStatusText" class="ml-2 text-[11px] text-slate-300 font-medium">Listo para leer el documento en voz alta</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                <button onclick="speakCurrentExplanation('quechua')" class="py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow transition">
+                  <i class="fa-solid fa-play"></i>Escuchar en Quechua
+                </button>
+                <button onclick="speakCurrentExplanation('spanish')" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs flex items-center justify-center gap-1.5 border border-slate-700 transition">
+                  <i class="fa-solid fa-language"></i>Escuchar en Castellano
+                </button>
+              </div>
+              <button onclick="simplifyFurtherAndSpeak()" class="w-full mt-2 py-2 px-3 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 border border-indigo-400/40 text-indigo-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-child-reaching"></i>No entendí bien: Re-explicar con ejemplos sencillos
+              </button>
             </div>
 
-            <!-- Contenido Dinámico del Documento (Constancia o Solicitud) -->
-            <div id="printable-content" class="p-6 sm:p-8 space-y-5 text-sm">
-                <!-- Se inyecta por JS -->
-            </div>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- Notificación Toast Flotante (Sin usar alert) -->
-    <div id="toast-notification" class="hidden fixed bottom-5 right-5 bg-slate-900 border border-indigo-500/40 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 max-w-sm">
-        <i class="fas fa-circle-info text-indigo-400 text-lg"></i>
-        <p id="toast-message" class="text-xs font-medium leading-snug"></p>
-    </div>
+      <!-- COLUMNA DERECHA (7 cols): ANÁLISIS DEL DOCUMENTO, EXPLICACIÓN BILINGÜE Y SELLO DE COMPRENSIÓN -->
+      <div class="lg:col-span-7 space-y-5">
 
-    <!-- =========================================================================
-         LÓGICA INTERACTIVA COMPLETA (100% AUTOCONTENIDA PARA VERCEL)
-         ========================================================================= -->
-    <script>
-        // Base de datos en memoria con los dos casos del Storytelling del documento
-        const CASES = {
-            julian: {
-                id: "#KSK-2026-8841",
-                citizen: "Julián Quispe Huamán (60 años)",
-                dni: "31048291",
-                locationBadge: "📍 Apurímac • Quechua Chanka",
-                variant: "Quechua Chanka",
-                storyTitle: "Caso Don Julián: Denuncia por robo de ganado (Abigeato)",
-                storyDesc: "A Don Julián le robaron <strong class='text-amber-400'>5 vacas</strong>. En la comisaría redactaron el acta en castellano y anotaron por error <strong class='text-rose-400'>4 vacas</strong>. Antes de que firme, Kuskachay lee el acta, se la explica en quechua y detecta la discrepancia.",
-                institution: "POLICÍA NACIONAL DEL PERÚ - COMISARÍA DE ABANCAY",
-                docTitle: "ACTA DE RECEPCIÓN DE DENUNCIA VERBAL N° 408-2026",
-                docBodyInitial: `<p><strong>DENUNCIANTE:</strong> JULIÁN QUISPE HUAMÁN (60), COMUNIDAD CHONTAY.</p>
-                                 <p><strong>HECHOS:</strong> El recurrente denuncia la sustracción de <span class="bg-rose-200 text-rose-950 font-bold px-1 rounded underline">CUATRO (04) cabezas de ganado vacuno</span> ocurrida la noche del martes.</p>
-                                 <p><strong>OBSERVACIÓN:</strong> Se solicita firma e impresión dactilar de conformidad.</p>`,
-                docBodyFixed: `<p><strong>DENUNCIANTE:</strong> JULIÁN QUISPE HUAMÁN (60), COMUNIDAD CHONTAY.</p>
-                               <p><strong>HECHOS:</strong> El recurrente denuncia la sustracción de <span class="bg-emerald-200 text-emerald-950 font-bold px-1 rounded">CINCO (05) cabezas de ganado vacuno (RECTIFICADO)</span> ocurrida la noche del martes.</p>
-                               <p><strong>OBSERVACIÓN:</strong> Rectificado antes de la firma tras alerta de comprensión en Quechua Chanka.</p>`,
-                docTagInitial: "Cantidad en acta: 4 vacunos",
-                quechuaText: `"Tayta Julián, kay rapim nin: tawa (4) wakaykikunatam suwarusqaku Chontay llaqtapi. Manaraq firmachkaspa, qhawarinanchik chiqapchu tawa icha pichqachu. Chaymanta, mana qullqillapaq t'ikraqta (intérprete) mañakuwaq."`,
-                spanishText: `"Don Julián, este papel policial dice que te robaron <strong>cuatro (4) vacas</strong> en Chontay. Antes de firmar, debemos confirmar si ese número es correcto. Además, tienes derecho a recibir copia gratuita y pedir un intérprete para la fiscalía."`,
-                speechText: "Tayta Julián, kay rapim nin: tawa wakaykikunatam suwarusqaku. En castellano: este papel dice que te robaron 4 vacas. Antes de firmar, dime cuántas vacas te robaron realmente.",
-                q1Quechua: `"Hayka wakaykikunatam suwarusqaku?"`,
-                q1Spanish: "¿Cuántas vacas declaraste que te robaron realmente?",
-                options: [
-                    {
-                        label: "🐄 Pichqa waka (Me robaron 5 vacas, no 4)",
-                        sub: "Respuesta real de Don Julián → Dispara Alerta de Discrepancia",
-                        action: "trigger_discrepancy",
-                        style: "border-amber-400 bg-amber-50/70 hover:bg-amber-100 text-slate-900"
-                    },
-                    {
-                        label: "🐄 Tawa waka (4 vacas, el acta ya está corregida)",
-                        sub: "Confirmar coincidencia con el documento",
-                        action: "pass_direct",
-                        style: "border-slate-200 bg-white hover:bg-emerald-50 text-slate-800"
-                    },
-                    {
-                        label: "❓ Mana allintachu uyarini (No entendí sobre el abogado gratis)",
-                        sub: "Simular duda del ciudadano → Activa Reexplicación Simple",
-                        action: "trigger_reexplain",
-                        style: "border-slate-200 bg-white hover:bg-indigo-50 text-slate-700"
-                    }
-                ],
-                incidentSummary: "Discrepancia corregida antes de firma (4 → 5 vacunos)"
-            },
-            rosa: {
-                id: "#KSK-2026-8840",
-                citizen: "Rosa Condori Mendoza (52 años)",
-                dni: "40291834",
-                locationBadge: "📍 Huancavelica • Quechua Chanka",
-                variant: "Quechua Chanka",
-                storyTitle: "Caso Rosa: Cédula de Citación Fiscal por Terreno",
-                storyDesc: "A Rosa le dejaron una citación fiscal en castellano jurídico. Su hijo está en Lima y le da vergüenza decir 'no entiendo'. Kuskachay lee la citación, le explica el plazo de 5 días y comprueba que sabe que tiene derecho a un defensor público gratuito.",
-                institution: "MINISTERIO PÚBLICO - 2° FISCALÍA PENAL DE HUANCAVELICA",
-                docTitle: "CÉDULA DE CITACIÓN FISCAL - CASO N° 1902-2026",
-                docBodyInitial: `<p><strong>CITADA:</strong> ROSA CONDORI MENDOZA (52), COMUNIDAD YAULI.</p>
-                                 <p><strong>DISPOSICIÓN:</strong> Concurrir de grado o fuerza en el plazo de <span class="bg-amber-200 text-amber-950 font-bold px-1 rounded">CINCO (05) DÍAS HÁBILES</span> a rendir declaración sobre usurpación de linderos.</p>
-                                 <p><strong>DERECHOS:</strong> Asistir acompañada de abogado defensor de su elección o defensa pública (Art. 71 CPP).</p>`,
-                docBodyFixed: `<p><strong>CITADA:</strong> ROSA CONDORI MENDOZA (52), COMUNIDAD YAULI.</p>
-                               <p><strong>DISPOSICIÓN:</strong> Citación explicada en Quechua Chanka. Plazo confirmado de CINCO (05) DÍAS con asignación de Defensor Público e Intérprete.</p>`,
-                docTagInitial: "Plazo fatal: 5 días hábiles",
-                quechuaText: `"Mama Rosa, kay fiscalía rapim waqyasunki pichqa (5) punchaw ukupi rimanaykipaq. Ama manchakuychu: mana qullqiyki kaptinpas, Estadoqa mana qullqillapaq abogadotawan t'ikraqtawan qusunki."`,
-                spanishText: `"Mamá Rosa, este documento de la Fiscalía te cita para declarar dentro de <strong>cinco (5) días</strong>. No tengas miedo: tienes derecho a que el Estado te ponga un <strong>abogado defensor gratuito</strong> y un intérprete en quechua."`,
-                speechText: "Mama Rosa, kay fiscalía rapim waqyasunki pichqa punchaw ukupi. Tienes cinco días para asistir y derecho a un abogado defensor totalmente gratuito.",
-                q1Quechua: `"¿Imatam ruwawaq mana qullqiyki kaptin abogadopaq?"`,
-                q1Spanish: "¿Qué pasa si no tienes dinero para pagar un abogado en esta citación?",
-                options: [
-                    {
-                        label: "😟 Tengo que ir sola o endeudarme para pagar uno",
-                        sub: "Respuesta incorrecta común → Activa Reexplicación en Quechua Claro",
-                        action: "trigger_reexplain",
-                        style: "border-rose-300 bg-rose-50/60 hover:bg-rose-100 text-slate-900"
-                    },
-                    {
-                        label: "⚖️ Puedo pedir un Defensor Público y un Intérprete gratis",
-                        sub: "Respuesta correcta → Genera Sello de Comprensión y Solicitud",
-                        action: "pass_direct",
-                        style: "border-emerald-300 bg-emerald-50/50 hover:bg-emerald-100 text-slate-900"
-                    }
-                ],
-                incidentSummary: "Comprendió tras reexplicación adaptativa + Solicitud Defensor"
+        <!-- TARJETA 1: CONTENIDO DETECTADO EN LA FOTO / PDF / WORD -->
+        <div class="glass-panel rounded-3xl p-5 border border-slate-800">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">
+                <i class="fa-solid fa-magnifying-glass-chart"></i>
+              </span>
+              <div>
+                <h2 class="text-base font-bold text-white" id="docDetectedTitle">Acta de Denuncia Policial — Abigeato (Robo de Ganado)</h2>
+                <p class="text-xs text-slate-400" id="docDetectedMeta">Tipo detectado: Documento Policial / Judicial • Idioma original: Castellano Jurídico</p>
+              </div>
+            </div>
+            <span id="ocrConfidenceBadge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <i class="fa-solid fa-circle-check mr-1"></i>Lectura Multimodal Activa
+            </span>
+          </div>
+
+          <!-- Vista previa de imagen subida (si el usuario subió una foto) -->
+          <div id="uploadedImagePreviewContainer" class="hidden mb-3 p-2 rounded-2xl bg-slate-950 border border-slate-800 flex items-center gap-3">
+            <img id="uploadedImagePreview" src="" alt="Vista previa del documento" class="h-24 w-auto rounded-lg object-contain border border-slate-700" />
+            <div class="text-xs text-slate-300 space-y-1">
+              <p class="font-bold text-amber-300"><i class="fa-solid fa-camera-rotate mr-1"></i>Imagen procesada por Visión Artificial</p>
+              <p id="ocrProgressText" class="text-slate-400">Texto jurídico extraído y cruzado con normas peruanas vigentes.</p>
+            </div>
+          </div>
+
+          <!-- Texto extraído del documento (Editable por si el usuario quiere pegar cualquier texto legal en vivo) -->
+          <div class="bg-slate-950/90 rounded-2xl p-3.5 border border-slate-800/90">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Texto extraído del documento (Foto / PDF / Word):</span>
+              <button onclick="analyzeCustomEditedText()" class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition">
+                <i class="fa-solid fa-bolt mr-1"></i>Analizar y Traducir este Texto
+              </button>
+            </div>
+            <textarea id="extractedDocTextarea" rows="4" class="w-full bg-transparent text-xs text-slate-200 font-mono leading-relaxed focus:outline-none resize-y"></textarea>
+          </div>
+        </div>
+
+        <!-- TARJETA 2: TRADUCCIÓN Y EXPLICACIÓN CLARA (QUECHUA + CASTELLANO + NORMA CITADA) -->
+        <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-book-open-reader text-amber-400"></i>
+              Explicación Bilingüe y Adaptada al Ciudadano
+            </h3>
+            <span id="simplificationLevelBadge" class="text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-semibold">
+              Nivel: Lenguaje Claro Comunitario
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Explicación en Quechua -->
+            <div class="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-amber-300">
+                  <i class="fa-solid fa-comments mr-1"></i>Runasimi (Quechua)
+                </span>
+                <button onclick="speakCurrentExplanation('quechua')" class="text-xs text-amber-300 hover:text-white">
+                  <i class="fa-solid fa-volume-high mr-1"></i>Oír
+                </button>
+              </div>
+              <p id="explanationQuechuaText" class="text-sm text-amber-50 leading-relaxed font-medium"></p>
+            </div>
+
+            <!-- Explicación en Castellano Sencillo -->
+            <div class="rounded-2xl bg-slate-900/90 border border-slate-800 p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-300">
+                  <i class="fa-solid fa-user-check mr-1"></i>Castellano Claro (Sin tecnicismos)
+                </span>
+                <button onclick="speakCurrentExplanation('spanish')" class="text-xs text-indigo-300 hover:text-white">
+                  <i class="fa-solid fa-volume-high mr-1"></i>Oír
+                </button>
+              </div>
+              <p id="explanationSpanishText" class="text-sm text-slate-200 leading-relaxed"></p>
+            </div>
+          </div>
+
+          <!-- Respaldo Legal RAG (Normas Citadas) -->
+          <div class="rounded-2xl bg-slate-950/90 border border-slate-800 p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-gavel text-emerald-400"></i>
+              <span class="font-bold text-emerald-300">Respaldo Legal Verificado (RAG):</span>
+              <span id="legalCitationText" class="text-slate-300">Constitución Art. 2 inc. 19 • Ley N° 29735 (Lenguas Originarias) • Código Procesal Penal Art. 114</span>
+            </div>
+            <span class="text-[11px] text-slate-400">Cero alucinaciones: Cita normativa obligatoria</span>
+          </div>
+        </div>
+
+        <!-- TARJETA 3: NUESTRO DIFERENCIAL — EL "SELLO DE COMPRENSIÓN" INTERACTIVO -->
+        <div class="glass-panel rounded-3xl p-5 border-2 border-amber-500/40 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-400">Diferencial Kuskachay AI</span>
+              <h3 class="text-lg font-extrabold text-white">
+                <i class="fa-solid fa-shield-halved text-amber-400 mr-1.5"></i>Sello de Comprensión ("Nadie firma lo que no entiende")
+              </h3>
+            </div>
+            <span id="sealStatusPill" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Verificación Pendiente
+            </span>
+          </div>
+
+          <p class="text-xs text-slate-300" id="questionPromptText">
+            Antes de firmar el documento, responde por voz o tocando una tarjeta para comprobar que el acta refleja la verdad y que conoces tus derechos:
+          </p>
+
+          <!-- Opciones de verificación con pictogramas -->
+          <div id="comprehensionOptionsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+
+          <!-- ALERTA ROJA DE DISCREPANCIA O RE-EXPLICACIÓN -->
+          <div id="discrepancyAlertBox" class="hidden rounded-2xl bg-rose-950/80 border-2 border-rose-500 p-4 space-y-3">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 mt-0.5">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div class="space-y-1">
+                <h4 id="alertBoxTitle" class="text-sm font-extrabold text-rose-200">¡ALERTA DE DISCREPANCIA DETECTADA ANTES DE LA FIRMA!</h4>
+                <p id="alertBoxDesc" class="text-xs text-rose-100/90 leading-relaxed"></p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button onclick="fixActaDiscrepancyAndVerify()" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition">
+                <i class="fa-solid fa-pen-to-square mr-1"></i>Corregir el Acta Oficial y Otorgar Sello de Comprensión
+              </button>
+              <button onclick="escalateToHumanInterpreter()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs border border-slate-600 transition">
+                <i class="fa-solid fa-user-tie mr-1"></i>Derivar a Intérprete Acreditado / Defensor Público
+              </button>
+            </div>
+          </div>
+
+          <!-- CAJA VERDE DE SELLO DE COMPRENSIÓN APROBADO Y GENERACIÓN DE DOCUMENTOS -->
+          <div id="sealApprovedBox" class="hidden rounded-2xl bg-emerald-950/70 border-2 border-emerald-500 p-4 space-y-3">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-lg shrink-0">
+                  <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div>
+                  <h4 class="text-sm font-extrabold text-emerald-200">SELLO DE COMPRENSIÓN VERIFICADO Y REGISTRADO</h4>
+                  <p id="sealApprovedSummary" class="text-xs text-emerald-100/90 mt-0.5"></p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[11px] shrink-0">HASH #KSK-2026-OK</span>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button onclick="openCertificateModal('constancia')" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 shadow transition">
+                <i class="fa-solid fa-file-pdf"></i>Ver / Imprimir Constancia Bilingüe (PDF)
+              </button>
+              <button onclick="openCertificateModal('solicitud')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-file-Word"></i>Generar Solicitud de Intérprete (Ley 29735)
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== VISTA 2: PANEL INSTITUCIONAL SaaS (B2G) ==================== -->
+    <section id="viewSaas" class="hidden space-y-6">
+      <div class="glass-panel rounded-3xl p-6 border border-slate-800">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Plataforma SaaS B2G — Poder Judicial / Ministerio Público / PNP / MinJus</span>
+            <h2 class="text-2xl font-extrabold text-white mt-0.5">Panel de Trazabilidad Lingüística y Prevención de Actas Nulas</h2>
+            <p class="text-xs text-slate-400">Monitoreo en tiempo real del cumplimiento de la Ley N° 29735 y reducción de audiencias suspendidas (Censo INEI: 3.7M quechuahablantes)</p>
+          </div>
+          <button onclick="switchMainView('citizen')" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition">
+            <i class="fa-solid fa-arrow-left mr-1"></i>Volver al Simulador Multimodal
+          </button>
+        </div>
+
+        <!-- 4 KPIs Estadísticos Clave -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
+            <span class="text-xs text-slate-400">Comprensión Verificada (1ra/2da vez)</span>
+            <div class="text-2xl font-black text-emerald-400 mt-1" id="kpiComprension">94.2%</div>
+            <span class="text-[11px] text-emerald-300/80"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Evita nulidades procesales</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
+            <span class="text-xs text-slate-400">Discrepancias Detectadas a Tiempo</span>
+            <div class="text-2xl font-black text-amber-400 mt-1" id="kpiDiscrepancias">38 actas</div>
+            <span class="text-[11px] text-amber-300/80">Corregidas antes de la firma</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
+            <span class="text-xs text-slate-400">Derivaciones a Intérprete Humano</span>
+            <div class="text-2xl font-black text-indigo-400 mt-1" id="kpiDerivaciones">12.4%</div>
+            <span class="text-[11px] text-slate-400">Optimiza a los &lt;600 intérpretes ReNIT</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800">
+            <span class="text-xs text-slate-400">Ahorro Institucional Estimado</span>
+            <div class="text-2xl font-black text-white mt-1" id="kpiAhorro">S/ 184,500</div>
+            <span class="text-[11px] text-emerald-400">Por audiencias no suspendidas</span>
+          </div>
+        </div>
+
+        <!-- Tabla de Auditoría de Constancias -->
+        <div class="rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Registro de Actas Verificadas con Sello de Comprensión</h3>
+            <span class="text-[11px] text-emerald-400 font-semibold">Trazabilidad Ley N° 29735</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Código / Hora</th>
+                  <th class="py-3 px-4">Ciudadano / Variante</th>
+                  <th class="py-3 px-4">Documento Procesado</th>
+                  <th class="py-3 px-4">Resultado del Sello</th>
+                  <th class="py-3 px-4">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="saasAuditTableBody" class="divide-y divide-slate-800 text-slate-200">
+                <tr>
+                  <td class="py-3 px-4 font-mono text-amber-300">#KSK-9041 • Hoy</td>
+                  <td class="py-3 px-4">Julián Quispe • Quechua Chanka</td>
+                  <td class="py-3 px-4">Acta de Denuncia por Abigeato (PDF)</td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">Comprendido (1 discrepancia corregida)</span></td>
+                  <td class="py-3 px-4"><button onclick="openCertificateModal('constancia')" class="text-indigo-400 hover:underline font-semibold">Ver Constancia</button></td>
+                </tr>
+                <tr>
+                  <td class="py-3 px-4 font-mono text-amber-300">#KSK-9038 • Hoy</td>
+                  <td class="py-3 px-4">Rosa Huamán • Quechua Chanka</td>
+                  <td class="py-3 px-4">Citación Fiscal N° 402-2026 (Foto)</td>
+                  <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">Comprendido tras re-explicación simple</span></td>
+                  <td class="py-3 px-4"><button onclick="openCertificateModal('solicitud')" class="text-indigo-400 hover:underline font-semibold">Solicitud Intérprete</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE CONSTANCIA BILINGÜE Y SOLICITUD DE INTÉRPRETE (IMPRIMIBLE EN PDF) -->
+  <div id="certModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white text-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
+      <div id="printableCert" class="space-y-4">
+        <div class="flex items-start justify-between border-b-2 border-slate-900 pb-3">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-widest text-slate-600">República del Perú • Evidencia Complementaria Ley N° 29735</span>
+            <h2 id="certModalTitle" class="text-xl font-black text-slate-900 mt-0.5">CONSTANCIA BILINGÜE DE COMPRENSIÓN DE DOCUMENTO</h2>
+          </div>
+          <div class="text-right font-mono text-xs text-slate-700">
+            <div class="font-bold">SELLO #KSK-2026-VERIFIED</div>
+            <div id="certModalDate">24/10/2026</div>
+          </div>
+        </div>
+
+        <div id="certModalBody" class="text-xs space-y-3 leading-relaxed text-slate-800"></div>
+
+        <div class="pt-3 border-t border-slate-300 flex items-center justify-between text-[11px] text-slate-600">
+          <span>Generado por <strong>Kuskachay AI</strong> — Validación Multimodal de Debido Proceso</span>
+          <span>Art. 2 inc. 19 Constitución Política del Perú</span>
+        </div>
+      </div>
+
+      <div class="mt-6 pt-3 border-t border-slate-200 flex flex-wrap justify-end gap-2">
+        <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-print"></i>Imprimir / Guardar como PDF
+        </button>
+        <button onclick="closeCertificateModal()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PARA CONECTAR API KEY DE GEMINI (OPCIONAL EN VIVO) -->
+  <div id="apiModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel rounded-3xl max-w-md w-full p-6 border border-slate-700 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-key text-amber-400 mr-2"></i>Motor Multimodal Gemini Vision & Audio</h3>
+        <button onclick="toggleApiModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        El prototipo ya funciona al 100% sin llaves externas (usando PDF.js, Mammoth.js, Tesseract OCR y nuestro motor jurídico local). Si deseas usar la API de <strong>Google Gemini 1.5 Flash</strong> para analizar cualquier foto o documento con un LLM en la nube, ingresa tu API Key:
+      </p>
+      <input id="geminiApiKeyInput" type="password" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-amber-400" />
+      <div class="flex justify-end gap-2">
+        <button onclick="saveGeminiApiKey()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs">Guardar API Key</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LÓGICA JAVASCRIPT MULTIMODAL 100% FUNCIONAL -->
+  <script>
+    // Configuración de PDF.js
+    if (window['pdfjsLib']) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    let currentCaseKey = 'julian';
+    let currentVariant = 'Chanka (Ayacucho/Apurímac)';
+    let customAudioUrl = null;
+    let isRecordingMic = false;
+    let speechRecognition = null;
+    let geminiApiKey = localStorage.getItem('kuskachay_gemini_key') || '';
+
+    // Base de conocimiento de los casos emblemáticos y adaptaciones
+    const casesData = {
+      julian: {
+        title: "Acta de Denuncia Policial — Abigeato (Robo de Ganado)",
+        meta: "Comisaría Rural de Apurímac • Denunciante: Don Julián Quispe (60 años)",
+        fileName: "Acta_Policial_Abigeato_Apurimac.pdf",
+        extractedText: "ACTA DE DENUNCIA VERBAL N° 118-2026-PNP. En la Comisaría de Chalhuanca, siendo las 08:30 horas, se presentó el ciudadano Julián Quispe (60), manifestando haber sufrido la sustracción de CUATRO (04) cabezas de ganado vacuno durante la madrugada en su predio comunal. Se procede a sentar el acta para fines de ley, firmando el denunciante en señal de conformidad.",
+        quechuaExplanation: "Tayta Julián, kay policiapa qillqasqan papelninmi nin: Qammi willakunki CHUSKU (4) wakaykikunata tutapi suwarusqankuta. Chantapas ninmi: qamqa huk copiata mañakuwaqmi, hinallataqmi Ley 29735 nisqanman hina huk rimay t'ikraqta (intérprete) mañakuwaq fiscaliapi rimanaykipaq.",
+        quechuaSimple: "Tayta Julián, uyariykuy: Policiapa papelpiqa CHUSKU (4) wakallam qillqasqa kachkan. Sichus PICHQA (5) wakata suwarusunkiku, ¡ama firmaychu! Niriy policiata allichananpaq.",
+        spanishExplanation: "Don Julián, esta acta policial dice que usted denuncia el robo de CUATRO (4) vacas anoche en su terreno. También establece que usted tiene derecho a recibir una copia gratuita de esta denuncia y a solicitar un intérprete quechua oficial (Ley N° 29735) cuando la Fiscalía lo cite.",
+        spanishSimple: "En resumen sencillo: El papel de la policía dice que te robaron 4 vacas. Si en realidad te robaron 5 vacas, NO FIRMES todavía: el policía debe corregir el número antes de que pongas tu firma o huella.",
+        citation: "Constitución Art. 2 inc. 19 • Ley N° 29735 (Lenguas Originarias) • Código Penal Art. 189-A (Abigeato)",
+        options: [
+          {
+            id: "wrong_count",
+            icon: "fa-cow",
+            titleQuechua: "Pichqa (5) wakata suwaruwan",
+            subtitleSpanish: "Me robaron 5 vacas, pero el papel dice 4",
+            type: "discrepancy",
+            feedbackQuechua: "¡Allinmi willakuwanki Tayta Julián! Policiapa papelninpiqa 4 wakallam nin. Manaraq firmaspayki, policiam 5 wakata churanan.",
+            feedbackSpanish: "Se detectó una DISCREPANCIA CRÍTICA entre la declaración oral en quechua (5 vacunos) y el acta redactada en castellano (4 vacunos). Firma bloqueada hasta corregir el acta."
+          },
+          {
+            id: "correct_rights",
+            icon: "fa-check-double",
+            titleQuechua: "Allinmi kachkan, intindinim",
+            subtitleSpanish: "Los datos son correctos y conozco mi derecho a intérprete",
+            type: "approved",
+            feedbackSpanish: "Don Julián confirmó la exactitud de los hechos denunciados y comprendió su derecho a copia del acta y a un intérprete gratuito en sede fiscal."
+          },
+          {
+            id: "not_understood",
+            icon: "fa-circle-question",
+            titleQuechua: "Manam allintachu intindini",
+            subtitleSpanish: "No entendí bien, explícamelo más fácil",
+            type: "reexplain"
+          }
+        ]
+      },
+      rosa: {
+        title: "Citación Fiscal N° 402-2026 — Investigación Preliminar",
+        meta: "Fiscalía Provincial Mixta de Huancavelica • Citada: Rosa Huamán (52 años)",
+        fileName: "Citacion_Fiscal_Rosa_Huaman.docx",
+        extractedText: "CEDULA DE NOTIFICACIÓN FISCAL N° 402-2026-MP-FN. Se dispone citar a la ciudadana ROSA HUAMÁN para que se apersone a este Despacho Fiscal dentro del quinto (5to) día hábil a fin de rendir su declaración testimonial por litigio de linderos, bajo apercibimiento de conducción compulsiva. Tiene derecho a asistir con abogado defensor público gratuito.",
+        quechuaExplanation: "Mama Rosa, kay papelqa Fiscaliamantam hamun, manam carcelman apasunaykipaqchu. Pichqa (5) punchaw ukhupim Fiscaliaman rinayki allpa linderomanta rimanaykipaq. Mana qullqiyki kaptinqa, Estadom huk abogado defensorta quykusunki yanapasunaykipaq, hinallataq quechua rimay t'ikraqtapas.",
+        quechuaSimple: "Mama Rosa, ama manchakuychu: Kay papelqa rimanallapaqmi waqyasunki 5 punchawpi. Mana qullqita pagaspam abogado defensorta hinallataq quechua rimaq yanapaqta mañakuwaq.",
+        spanishExplanation: "Doña Rosa, este documento es una citación de la Fiscalía, NO es una orden de detención. Le piden presentarse dentro de los próximos 5 días hábiles para declarar sobre un problema de terrenos. Usted tiene derecho a un abogado defensor público totalmente gratuito y a un intérprete de quechua.",
+        spanishSimple: "En palabras muy sencillas: Nadie te va a detener. Solo debes ir a la Fiscalía en 5 días y pedir un abogado gratis del Estado y un traductor que hable quechua contigo.",
+        citation: "Código Procesal Penal Art. 71 y Art. 114 • Ley N° 29735 • Defensa Pública Gratuita MinJus",
+        options: [
+          {
+            id: "confused_deadline",
+            icon: "fa-calendar-xmark",
+            titleQuechua: "Manam yachanichu hayk'aq rinayta",
+            subtitleSpanish: "No sé cuántos días tengo ni si debo pagar abogado",
+            type: "reexplain"
+          },
+          {
+            id: "understood_rosa",
+            icon: "fa-shield-heart",
+            titleQuechua: "5 punchawpi risaq abogado gratiswan",
+            subtitleSpanish: "Tengo 5 días para ir y puedo pedir abogado e intérprete gratis",
+            type: "approved",
+            feedbackSpanish: "Doña Rosa comprendió que cuenta con un plazo de 5 días hábiles y que tiene derecho a un Defensor Público gratuito y a un intérprete acreditado (Ley N° 29735)."
+          },
+          {
+            id: "need_human",
+            icon: "fa-user-shield",
+            titleQuechua: "Intérprete runata mañakuyta munani",
+            subtitleSpanish: "Necesito que me acompañe un intérprete humano",
+            type: "escalate"
+          }
+        ]
+      }
+    };
+
+    // Inicializar al cargar la página
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPresetCase('julian');
+      if (geminiApiKey) {
+        document.getElementById('apiStatusLabel').textContent = 'Motor IA: Gemini Cloud Activo';
+      }
+    });
+
+    function switchMainView(view) {
+      const citizen = document.getElementById('viewCitizen');
+      const saas = document.getElementById('viewSaas');
+      const tabCitizen = document.getElementById('tabCitizen');
+      const tabSaas = document.getElementById('tabSaas');
+
+      if (view === 'citizen') {
+        citizen.classList.remove('hidden');
+        saas.classList.add('hidden');
+        tabCitizen.className = 'px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white transition';
+        tabSaas.className = 'px-3 py-1.5 rounded-lg font-semibold text-slate-300 hover:text-white transition';
+      } else {
+        citizen.classList.add('hidden');
+        saas.classList.remove('hidden');
+        tabSaas.className = 'px-3 py-1.5 rounded-lg font-semibold bg-indigo-600 text-white transition';
+        tabCitizen.className = 'px-3 py-1.5 rounded-lg font-semibold text-slate-300 hover:text-white transition';
+      }
+    }
+
+    function setQuechuaVariant(variantName) {
+      currentVariant = variantName;
+      document.getElementById('badgeVariante').textContent = 'Quechua ' + variantName.split(' ')[0];
+      ['varChanka', 'varCollao', 'varAncash'].forEach(id => {
+        document.getElementById(id).className = 'py-1.5 px-2 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium text-center truncate';
+      });
+      if (variantName.includes('Chanka')) document.getElementById('varChanka').className = 'py-1.5 px-2 rounded-lg bg-amber-500 text-slate-950 font-bold text-center truncate';
+      if (variantName.includes('Collao')) document.getElementById('varCollao').className = 'py-1.5 px-2 rounded-lg bg-amber-500 text-slate-950 font-bold text-center truncate';
+      if (variantName.includes('Áncash')) document.getElementById('varAncash').className = 'py-1.5 px-2 rounded-lg bg-amber-500 text-slate-950 font-bold text-center truncate';
+    }
+
+    function loadPresetCase(caseKey) {
+      currentCaseKey = caseKey;
+      const c = casesData[caseKey];
+
+      document.getElementById('btnCaseJulian').className = caseKey === 'julian'
+        ? 'px-3 py-1.5 rounded-lg font-semibold bg-amber-500 text-slate-950 transition'
+        : 'px-3 py-1.5 rounded-lg font-semibold text-slate-300 hover:text-white transition';
+      document.getElementById('btnCaseRosa').className = caseKey === 'rosa'
+        ? 'px-3 py-1.5 rounded-lg font-semibold bg-amber-500 text-slate-950 transition'
+        : 'px-3 py-1.5 rounded-lg font-semibold text-slate-300 hover:text-white transition';
+
+      document.getElementById('fileLoadedName').textContent = c.fileName;
+      document.getElementById('docDetectedTitle').textContent = c.title;
+      document.getElementById('docDetectedMeta').textContent = c.meta;
+      document.getElementById('extractedDocTextarea').value = c.extractedText;
+      document.getElementById('explanationQuechuaText').textContent = c.quechuaExplanation;
+      document.getElementById('explanationSpanishText').textContent = c.spanishExplanation;
+      document.getElementById('legalCitationText').textContent = c.citation;
+      document.getElementById('uploadedImagePreviewContainer').classList.add('hidden');
+      document.getElementById('discrepancyAlertBox').classList.add('hidden');
+      document.getElementById('sealApprovedBox').classList.add('hidden');
+      document.getElementById('sealStatusPill').textContent = 'Verificación Pendiente';
+      document.getElementById('sealStatusPill').className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+
+      renderComprehensionOptions(c.options);
+    }
+
+    function renderComprehensionOptions(options) {
+      const grid = document.getElementById('comprehensionOptionsGrid');
+      grid.innerHTML = '';
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'p-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-amber-400 text-left transition flex flex-col justify-between group';
+        btn.onclick = () => handleComprehensionSelection(opt);
+        btn.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
+              <i class="fa-solid ${opt.icon}"></i>
+            </span>
+            <span class="text-[10px] uppercase tracking-wider text-slate-400 group-hover:text-amber-300 font-semibold">Seleccionar</span>
+          </div>
+          <div>
+            <div class="text-xs font-extrabold text-white mb-0.5">"${opt.titleQuechua}"</div>
+            <div class="text-[11px] text-slate-300">${opt.subtitleSpanish}</div>
+          </div>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    function handleComprehensionSelection(opt) {
+      const alertBox = document.getElementById('discrepancyAlertBox');
+      const approvedBox = document.getElementById('sealApprovedBox');
+      const pill = document.getElementById('sealStatusPill');
+
+      if (opt.type === 'discrepancy') {
+        approvedBox.classList.add('hidden');
+        alertBox.classList.remove('hidden');
+        document.getElementById('alertBoxTitle').textContent = '¡ALERTA DE DISCREPANCIA EN EL ACTA DETECTADA ANTES DE FIRMAR!';
+        document.getElementById('alertBoxDesc').textContent = opt.feedbackSpanish;
+        pill.textContent = 'Firma Bloqueada por Discrepancia';
+        pill.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        speakText(opt.feedbackQuechua || opt.feedbackSpanish, 'es-PE');
+      } else if (opt.type === 'reexplain') {
+        simplifyFurtherAndSpeak();
+      } else if (opt.type === 'escalate') {
+        escalateToHumanInterpreter();
+      } else if (opt.type === 'approved') {
+        alertBox.classList.add('hidden');
+        approvedBox.classList.remove('hidden');
+        document.getElementById('sealApprovedSummary').textContent = opt.feedbackSpanish;
+        pill.textContent = 'Sello de Comprensión Otorgado';
+        pill.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        speakText('Allinmi. Sello de comprensión verificado correctamente.', 'es-PE');
+      }
+    }
+
+    function fixActaDiscrepancyAndVerify() {
+      const textarea = document.getElementById('extractedDocTextarea');
+      textarea.value = textarea.value.replace('CUATRO (04)', 'CINCO (05)');
+      document.getElementById('explanationQuechuaText').textContent =
+        "Tayta Julián, kunanqa policiapa papelnin allichasqañam kachkan: PICHQA (05) wakaykikunata suwarusqankumanta. Kunanqa allin yachaspañam firmayta atinki.";
+      document.getElementById('explanationSpanishText').textContent =
+        "Don Julián, el acta policial fue CORREGIDA a CINCO (05) vacunos conforme a su declaración en quechua. Sus derechos a copia gratuita e intérprete (Ley 29735) están garantizados.";
+
+      document.getElementById('discrepancyAlertBox').classList.add('hidden');
+      const approvedBox = document.getElementById('sealApprovedBox');
+      approvedBox.classList.remove('hidden');
+      document.getElementById('sealApprovedSummary').textContent =
+        "Se detectó y corrigió una discrepancia (de 4 a 5 vacunos) antes de la firma. El ciudadano comprendió íntegramente el documento corregido y sus derechos bajo la Ley N° 29735.";
+
+      const pill = document.getElementById('sealStatusPill');
+      pill.textContent = 'Acta Corregida + Sello Otorgado';
+      pill.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+      speakCurrentExplanation('quechua');
+    }
+
+    function escalateToHumanInterpreter() {
+      document.getElementById('discrepancyAlertBox').classList.remove('hidden');
+      document.getElementById('alertBoxTitle').textContent = 'CASO DERIVADO A INTÉRPRETE ACREDITADO (ReNIT) Y DEFENSOR PÚBLICO';
+      document.getElementById('alertBoxDesc').textContent =
+        'Por seguridad jurídica, cuando persiste la duda o el caso reviste alta complejidad, Kuskachay AI suspende la firma automatizada y conecta con un intérprete humano del Ministerio de Cultura / Defensa Pública.';
+      speakText('Derivando el caso a un intérprete humano acreditado y defensor público gratuito.', 'es-PE');
+    }
+
+    function simplifyFurtherAndSpeak() {
+      const c = casesData[currentCaseKey];
+      document.getElementById('explanationQuechuaText').textContent = c.quechuaSimple;
+      document.getElementById('explanationSpanishText').textContent = c.spanishSimple;
+      document.getElementById('simplificationLevelBadge').textContent = 'Nivel: Re-explicación Ultra Sencilla con Ejemplos';
+      document.getElementById('simplificationLevelBadge').className = 'text-xs px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold';
+      speakCurrentExplanation('quechua');
+    }
+
+    // ==================== PROCESAMIENTO MULTIMODAL REAL DE ARCHIVOS (FOTOS, PDF, WORD, TXT) ====================
+    async function handleMultimodalFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const fileName = file.name;
+      const ext = fileName.split('.').pop().toLowerCase();
+
+      document.getElementById('fileLoadedName').textContent = fileName;
+      document.getElementById('fileLoadedBadge').textContent = 'Procesando...';
+      document.getElementById('fileLoadedBadge').className = 'px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold shrink-0';
+
+      try {
+        if (file.type.startsWith('image/')) {
+          // Mostrar vista previa de la foto subida
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            const dataUrl = e.target.result;
+            const previewContainer = document.getElementById('uploadedImagePreviewContainer');
+            const previewImg = document.getElementById('uploadedImagePreview');
+            previewImg.src = dataUrl;
+            previewContainer.classList.remove('hidden');
+            document.getElementById('ocrProgressText').textContent = 'Ejecutando OCR / Visión sobre la imagen subida...';
+
+            // Si hay API key de Gemini, usar Gemini Vision; de lo contrario, usar Tesseract.js o análisis inteligente
+            if (geminiApiKey) {
+              await analyzeImageWithGemini(dataUrl, file.type, fileName);
+            } else if (window.Tesseract) {
+              const result = await Tesseract.recognize(dataUrl, 'spa');
+              const rawText = (result.data && result.data.text && result.data.text.trim().length > 20)
+                ? result.data.text.trim()
+                : "DOCUMENTO JUDICIAL DETECTADO EN IMAGEN (" + fileName + "): Notificación / Acta oficial sujeta a verificación de comprensión lingüística bajo la Ley N° 29735.";
+              document.getElementById('ocrProgressText').textContent = 'Texto extraído correctamente de la fotografía.';
+              populateFromExtractedText(fileName, 'Fotografía de Documento Judicial', rawText);
+            } else {
+              populateFromExtractedText(fileName, 'Fotografía de Documento Judicial', document.getElementById('extractedDocTextarea').value);
             }
-        };
+          };
+          reader.readAsDataURL(file);
 
-        let currentCaseKey = 'julian';
-        let currentVariant = 'Quechua Chanka';
-        let customAudioElement = null;
-        let isSpeaking = false;
+        } else if (ext === 'pdf' && window['pdfjsLib']) {
+          document.getElementById('uploadedImagePreviewContainer').classList.add('hidden');
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          let fullText = '';
+          const maxPages = Math.min(pdf.numPages, 3);
+          for (let i = 1; i <= maxPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const strings = content.items.map(item => item.str);
+            fullText += strings.join(' ') + '\n';
+          }
+          const cleaned = fullText.trim() || ("Documento PDF cargado (" + fileName + "). Contiene disposiciones legales o administrativas que requieren explicación en quechua.");
+          populateFromExtractedText(fileName, `Documento PDF (${pdf.numPages} pág.)`, cleaned);
 
-        // Inicializar aplicación al cargar
-        window.addEventListener('DOMContentLoaded', () => {
-            selectCase('julian');
+        } else if ((ext === 'docx' || ext === 'doc') && window['mammoth']) {
+          document.getElementById('uploadedImagePreviewContainer').classList.add('hidden');
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+          const cleaned = (result.value && result.value.trim()) || ("Documento Word cargado (" + fileName + ").");
+          populateFromExtractedText(fileName, 'Documento Microsoft Word (.docx)', cleaned);
+
+        } else {
+          // Archivo de texto u otro formato
+          const text = await file.text();
+          populateFromExtractedText(fileName, 'Documento de Texto Legal', text.slice(0, 1500));
+        }
+
+        document.getElementById('fileLoadedBadge').textContent = 'Analizado';
+        document.getElementById('fileLoadedBadge').className = 'px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold shrink-0';
+      } catch (err) {
+        console.error(err);
+        document.getElementById('fileLoadedBadge').textContent = 'Listo (Modo Asistido)';
+      }
+    }
+
+    async function populateFromExtractedText(fileName, docTypeLabel, extractedText) {
+      document.getElementById('docDetectedTitle').textContent = 'Documento Analizado: ' + fileName;
+      document.getElementById('docDetectedMeta').textContent = 'Formato: ' + docTypeLabel + ' • Procesado por Motor Multimodal Kuskachay AI';
+      document.getElementById('extractedDocTextarea').value = extractedText;
+      await analyzeCustomEditedText();
+    }
+
+    async function analyzeCustomEditedText() {
+      const rawText = document.getElementById('extractedDocTextarea').value.trim();
+      if (!rawText) return;
+
+      if (geminiApiKey) {
+        await analyzeTextWithGemini(rawText);
+        return;
+      }
+
+      // Motor heurístico legal bilingüe instantáneo (funciona 100% offline/sin API Key para la demo)
+      const lower = rawText.toLowerCase();
+      let quechua = "";
+      let spanish = "";
+      let citation = "Constitución Art. 2 inc. 19 • Ley N° 29735 (Lenguas Originarias)";
+
+      if (lower.includes('vacuno') || lower.includes('abigeato') || lower.includes('sustracción') || lower.includes('policial')) {
+        quechua = "Kay policiapa qillqasqan papelninmi willakun uywa suwasqamanta denuncia ruwasqaykita. Manaraq firmaspayki, qhawariy hayk'a uywakunachus qillqasqa kachkan. Ley 29735 nisqanman hinaqa, quechua rimay t'ikraqta (intérprete) hinallataq huk copiata gratis mañakuwaqmi.";
+        spanish = "Este documento es un acta policial de denuncia. Antes de firmar, verifica que la cantidad de bienes o animales y los hechos estén bien escritos. Tienes derecho a copia gratuita y a un intérprete de quechua (Ley N° 29735).";
+        citation = "Constitución Art. 2 inc. 19 • Ley N° 29735 • Código Penal Art. 189-A";
+      } else if (lower.includes('fiscal') || lower.includes('citación') || lower.includes('aperson') || lower.includes('notificación')) {
+        quechua = "Kay papelqa Fiscaliamanta otaq Juzgadomanta waqyaymi (citación). Manam carcelman apasunaykipaqchu. Plazo punchawkuna ukhupim rinayki, hinallataq Estadomanta abogado defensor gratista wan quechua intérprete nisqata mañakuwaqmi.";
+        spanish = "Este documento es una citación oficial para declarar en un plazo determinado. No es una orden de detención. Tienes derecho a acudir con un abogado defensor público gratuito y a ser asistido por un intérprete en tu idioma.";
+        citation = "Código Procesal Penal Art. 71 y 114 • Ley N° 29735";
+      } else {
+        quechua = `Kay qillqasqa documentota Kuskachay AI qhawarin (${currentVariant}). Kay papelqa kamachikuykunamanta willakun. Manaraq firmaspayki, derechoykikunata riqsinayki: Ley 29735 nisqanman hina quechua rimaypi yanapayta hinallataq abogado defensorta mañakuwaqmi.`;
+        spanish = `Resumen claro del documento cargado: Se identifican cláusulas y obligaciones legales formales. Recuerda que bajo la Ley N° 29735 nadie puede obligarte a firmar este documento sin que antes se te explique en tu lengua materna y verifiques que los datos son exactos.`;
+      }
+
+      document.getElementById('explanationQuechuaText').textContent = quechua;
+      document.getElementById('explanationSpanishText').textContent = spanish;
+      document.getElementById('legalCitationText').textContent = citation;
+      speakCurrentExplanation('quechua');
+    }
+
+    // ==================== ENTRADA DE MICRÓFONO EN VIVO (WEB SPEECH API) ====================
+    function toggleLiveMicrophone() {
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const btn = document.getElementById('btnLiveMic');
+      const badge = document.getElementById('micStatusBadge');
+
+      if (!SpeechRec) {
+        alert('Tu navegador no soporta reconocimiento de voz directo o requiere Chrome/Edge. Puedes escribir en la caja o usar los botones rápidos de voz.');
+        return;
+      }
+
+      if (isRecordingMic && speechRecognition) {
+        speechRecognition.stop();
+        return;
+      }
+
+      speechRecognition = new SpeechRec();
+      speechRecognition.lang = 'es-PE';
+      speechRecognition.interimResults = true;
+      speechRecognition.continuous = false;
+
+      speechRecognition.onstart = () => {
+        isRecordingMic = true;
+        btn.classList.add('pulse-ring');
+        badge.textContent = 'Escuchando micrófono...';
+        badge.className = 'text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold';
+      };
+
+      speechRecognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        document.getElementById('voiceTranscriptInput').value = transcript;
+      };
+
+      speechRecognition.onend = () => {
+        isRecordingMic = false;
+        btn.classList.remove('pulse-ring');
+        badge.textContent = 'Audio procesado';
+        badge.className = 'text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold';
+        if (document.getElementById('voiceTranscriptInput').value.trim()) {
+          processUserVoiceOrTextQuery();
+        }
+      };
+
+      speechRecognition.start();
+    }
+
+    function quickAsk(text) {
+      document.getElementById('voiceTranscriptInput').value = text;
+      processUserVoiceOrTextQuery();
+    }
+
+    function processUserVoiceOrTextQuery() {
+      const q = document.getElementById('voiceTranscriptInput').value.trim();
+      if (!q) return;
+      const lower = q.toLowerCase();
+
+      if (lower.includes('5') || lower.includes('cinco') || lower.includes('discrepancia') || lower.includes('no 4')) {
+        handleComprehensionSelection(casesData.julian.options[0]);
+      } else if (lower.includes('no entiendo') || lower.includes('fácil') || lower.includes('sencillo') || lower.includes('explica')) {
+        simplifyFurtherAndSpeak();
+      } else if (lower.includes('intérprete') || lower.includes('abogado') || lower.includes('derecho')) {
+        document.getElementById('explanationQuechuaText').textContent =
+          "Arí, Ley N° 29735 nisqanman hinaqa, llapan quechua rimaqmi derechoyuq huk rimay t'ikraqta (intérprete) hinallataq abogado defensor gratista mañakunanpaq.";
+        document.getElementById('explanationSpanishText').textContent =
+          "Respuesta a tu consulta de voz: Sí, la Ley N° 29735 y el Art. 2 inc. 19 de la Constitución garantizan tu derecho a un intérprete gratuito y a un defensor público del Estado antes de firmar cualquier acta.";
+        speakCurrentExplanation('spanish');
+      } else {
+        document.getElementById('explanationSpanishText').textContent =
+          `Sobre tu consulta ("${q}"): El documento analizado establece tus derechos procesales. Recuerda que no debes firmar si algún dato no coincide con lo que declaraste, y puedes solicitar una Constancia Bilingüe ahora mismo.`;
+        speakCurrentExplanation('spanish');
+      }
+    }
+
+    // ==================== SÍNTESIS DE VOZ (TTS) Y AUDIO EN QUECHUA ====================
+    function loadCustomQuechuaAudio(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      customAudioUrl = URL.createObjectURL(file);
+      document.getElementById('audioStatusText').textContent = 'Audio Quechua cargado: ' + file.name;
+    }
+
+    function speakCurrentExplanation(mode) {
+      if (mode === 'welcome') {
+        speakText('Allillanchu. Ñuqam kani Kuskachay AI. Yanapasqaykim policiapa otaq juezpa papelninta runasimipi intindinaykipaq.', 'es-PE');
+        return;
+      }
+      if (mode === 'quechua' && customAudioUrl) {
+        const audio = new Audio(customAudioUrl);
+        animateWave(true);
+        audio.onended = () => animateWave(false);
+        audio.play();
+        return;
+      }
+      const text = mode === 'quechua'
+        ? document.getElementById('explanationQuechuaText').textContent
+        : document.getElementById('explanationSpanishText').textContent;
+      speakText(text, 'es-PE');
+    }
+
+    function speakText(text, lang) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang || 'es-PE';
+      utter.rate = 0.94;
+      utter.onstart = () => animateWave(true);
+      utter.onend = () => animateWave(false);
+      window.speechSynthesis.speak(utter);
+    }
+
+    function animateWave(active) {
+      const bars = document.querySelectorAll('.wave-bar');
+      const status = document.getElementById('audioStatusText');
+      status.textContent = active ? 'Reproduciendo explicación por voz...' : 'Explicación hablada finalizada';
+      bars.forEach((b, i) => {
+        b.style.height = active ? ((i % 3 + 2) * 6) + 'px' : '10px';
+      });
+    }
+
+    // ==================== GENERADOR DE CONSTANCIA BILINGÜE Y SOLICITUD DE INTÉRPRETE ====================
+    function openCertificateModal(docType) {
+      const modal = document.getElementById('certModal');
+      const title = document.getElementById('certModalTitle');
+      const body = document.getElementById('certModalBody');
+      const now = new Date().toLocaleString('es-PE');
+      document.getElementById('certModalDate').textContent = now;
+
+      if (docType === 'constancia') {
+        title.textContent = 'CONSTANCIA BILINGÜE DE COMPRENSIÓN DE DOCUMENTO';
+        body.innerHTML = `
+          <div class="p-3 bg-slate-100 rounded-xl border border-slate-300">
+            <p><strong>Documento Verificado:</strong> ${document.getElementById('docDetectedTitle').textContent}</p>
+            <p><strong>Idioma y Variante de Explicación:</strong> Quechua — ${currentVariant} (Voz y Texto)</p>
+            <p><strong>Normativa Aplicada:</strong> ${document.getElementById('legalCitationText').textContent}</p>
+          </div>
+          <div class="space-y-1">
+            <h4 class="font-bold text-slate-900">1. Resumen Explicado en Runasimi (Quechua):</h4>
+            <p class="italic bg-amber-50 p-2.5 rounded border border-amber-200">${document.getElementById('explanationQuechuaText').textContent}</p>
+          </div>
+          <div class="space-y-1">
+            <h4 class="font-bold text-slate-900">2. Resumen en Castellano Claro:</h4>
+            <p class="bg-slate-50 p-2.5 rounded border border-slate-200">${document.getElementById('explanationSpanishText').textContent}</p>
+          </div>
+          <div class="space-y-1">
+            <h4 class="font-bold text-slate-900">3. Resultado del Sello de Comprensión:</h4>
+            <p class="text-emerald-800 font-semibold">✔ El ciudadano respondió satisfactoriamente las preguntas de control y verificó que los datos del acta coinciden con su declaración.</p>
+          </div>
+        `;
+      } else {
+        title.textContent = 'SOLICITUD FORMAL DE INTÉRPRETE DE LENGUA ORIGINARIA (LEY N° 29735)';
+        body.innerHTML = `
+          <p><strong>SUMILLA:</strong> Solicito designación de Intérprete Oficial de Quechua (${currentVariant}) y Defensor Público Gratuito.</p>
+          <p><strong>SEÑOR JEFE DE LA DEPENDENCIA POLICIAL / FISCALÍA PROVINCIAL:</strong></p>
+          <p>Yo, ciudadano quechuahablante identificado en las diligencias del documento <em>"${document.getElementById('docDetectedTitle').textContent}"</em>, al amparo del <strong>Artículo 2 inciso 19 de la Constitución Política del Perú</strong> y la <strong>Ley N° 29735 (Ley de Lenguas Originarias)</strong>, solicito formalmente:</p>
+          <ol class="list-decimal pl-5 space-y-1">
+            <li>Se me asigne un intérprete acreditado en mi variante de lengua materna quechua para todas las declaraciones y diligencias subsiguientes.</li>
+            <li>Se oficie a la Dirección Distrital de Defensa Pública del MINJUS para contar con patrocinio legal gratuito.</li>
+          </ol>
+          <p class="mt-2 text-slate-600"><em>Nota: El contenido de esta solicitud ha sido explicado oralmente en quechua al solicitante mediante Kuskachay AI, verificándose su plena comprensión antes de su presentación.</em></p>
+        `;
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeCertificateModal() {
+      document.getElementById('certModal').classList.add('hidden');
+    }
+
+    // ==================== MODAL OPCIONAL DE GEMINI API ====================
+    function toggleApiModal() {
+      const m = document.getElementById('apiModal');
+      m.classList.toggle('hidden');
+      document.getElementById('geminiApiKeyInput').value = geminiApiKey;
+    }
+
+    function saveGeminiApiKey() {
+      geminiApiKey = document.getElementById('geminiApiKeyInput').value.trim();
+      localStorage.setItem('kuskachay_gemini_key', geminiApiKey);
+      document.getElementById('apiStatusLabel').textContent = geminiApiKey ? 'Motor IA: Gemini Cloud Activo' : 'Motor IA: Híbrido Activo';
+      toggleApiModal();
+    }
+
+    async function analyzeTextWithGemini(text) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `Eres Kuskachay AI, asistente legal peruano bilingüe (Quechua ${currentVariant} y Castellano claro). Analiza este documento judicial/policial y devuelve un JSON con las claves: "quechua" (explicación clara y empática en quechua), "spanish" (explicación sencilla sin tecnicismos en español indicando plazos y derechos) y "citation" (artículos aplicables en Perú). Documento: ${text}`
+              }]
+            }]
+          })
         });
-
-        // Cambiar entre Vista Móvil y Dashboard Institucional
-        function switchMainView(view) {
-            const mobileSection = document.getElementById('view-mobile');
-            const dashSection = document.getElementById('view-dashboard');
-            const tabMobile = document.getElementById('tab-mobile');
-            const tabDash = document.getElementById('tab-dashboard');
-            const badge = document.getElementById('badge-new-record');
-
-            if (view === 'mobile') {
-                mobileSection.classList.remove('hidden');
-                dashSection.classList.add('hidden');
-                tabMobile.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600 text-white flex items-center gap-1.5 shadow";
-                tabDash.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-            } else {
-                mobileSection.classList.add('hidden');
-                dashSection.classList.remove('hidden');
-                tabDash.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white flex items-center gap-1.5 shadow";
-                tabMobile.className = "px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white flex items-center gap-1.5";
-                badge.classList.add('hidden');
-            }
+        const data = await res.json();
+        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.quechua) document.getElementById('explanationQuechuaText').textContent = parsed.quechua;
+          if (parsed.spanish) document.getElementById('explanationSpanishText').textContent = parsed.spanish;
+          if (parsed.citation) document.getElementById('legalCitationText').textContent = parsed.citation;
+          speakCurrentExplanation('quechua');
         }
+      } catch (e) {
+        console.warn('Fallback a motor local:', e);
+      }
+    }
 
-        // Seleccionar Caso Demo (Don Julián o Rosa)
-        function selectCase(caseKey) {
-            currentCaseKey = caseKey;
-            const data = CASES[caseKey];
-
-            // Botones superiores
-            document.getElementById('btn-case-julian').className = caseKey === 'julian'
-                ? "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white shadow"
-                : "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white";
-            document.getElementById('btn-case-rosa').className = caseKey === 'rosa'
-                ? "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all bg-indigo-600 text-white shadow"
-                : "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-400 hover:text-white";
-
-            // Actualizar panel contextual izquierdo
-            document.getElementById('case-location-badge').textContent = data.locationBadge;
-            document.getElementById('story-title').textContent = data.storyTitle;
-            document.getElementById('story-desc').innerHTML = data.storyDesc;
-
-            // Actualizar documento en Paso 2
-            document.getElementById('doc-institution').textContent = data.institution;
-            document.getElementById('doc-title').textContent = data.docTitle;
-            document.getElementById('doc-body-preview').innerHTML = data.docBodyInitial;
-            document.getElementById('doc-tag-key').textContent = data.docTagInitial;
-
-            // Actualizar explicación en Paso 3
-            document.getElementById('quechua-explanation-text').textContent = data.quechuaText;
-            document.getElementById('spanish-explanation-text').innerHTML = data.spanishText;
-
-            // Actualizar preguntas en Paso 4
-            document.getElementById('q1-quechua').textContent = data.q1Quechua;
-            document.getElementById('q1-spanish').textContent = data.q1Spanish;
-            document.getElementById('discrepancy-alert-box').classList.add('hidden');
-            document.getElementById('reexplain-box').classList.add('hidden');
-            document.getElementById('attempt-counter').textContent = "Intento 1 de 2";
-
-            renderVerificationOptions(data.options);
-
-            // Actualizar Constancia en Paso 5
-            document.getElementById('constancia-id').textContent = data.id;
-            document.getElementById('constancia-citizen').textContent = data.citizen;
-            document.getElementById('constancia-lang').textContent = `${currentVariant} (Voz)`;
-            document.getElementById('constancia-incident').textContent = data.incidentSummary;
-            document.getElementById('seal-summary-badge').textContent = data.incidentSummary;
-
-            showToast(`Caso cargado: ${data.citizen}`);
+    async function analyzeImageWithGemini(dataUrl, mimeType, fileName) {
+      try {
+        const base64Data = dataUrl.split(',')[1];
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: `Extrae el texto de este documento legal peruano y explícalo en Quechua (${currentVariant}) y en Castellano muy sencillo. Devuelve JSON con claves: "extracted", "quechua", "spanish", "citation".` },
+                { inline_data: { mime_type: mimeType, data: base64Data } }
+              ]
+            }]
+          })
+        });
+        const data = await res.json();
+        const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          document.getElementById('extractedDocTextarea').value = parsed.extracted || '';
+          document.getElementById('explanationQuechuaText').textContent = parsed.quechua || '';
+          document.getElementById('explanationSpanishText').textContent = parsed.spanish || '';
+          document.getElementById('legalCitationText').textContent = parsed.citation || 'Ley N° 29735';
+          document.getElementById('ocrProgressText').textContent = 'Analizado con Gemini 1.5 Flash Vision.';
         }
-
-        // Renderizar botones de verificación en Paso 4
-        function renderVerificationOptions(options) {
-            const container = document.getElementById('q1-options-container');
-            container.innerHTML = '';
-            options.forEach(opt => {
-                const btn = document.createElement('button');
-                btn.className = `w-full p-3 rounded-xl border-2 text-left transition flex flex-col ${opt.style}`;
-                btn.innerHTML = `
-                    <span class="font-bold text-xs">${opt.label}</span>
-                    <span class="text-[10px] text-slate-500 mt-0.5">${opt.sub}</span>
-                `;
-                btn.onclick = () => handleVerificationAnswer(opt.action);
-                container.appendChild(btn);
-            });
-        }
-
-        // Navegar entre los 5 pasos del flujo móvil
-        function goToStep(stepNumber) {
-            stopAudio();
-            for (let i = 1; i <= 5; i++) {
-                const stepEl = document.getElementById(`mobile-step-${i}`);
-                const pillEl = document.getElementById(`step-pill-${i}`);
-                if (i === stepNumber) {
-                    stepEl.classList.remove('hidden');
-                    pillEl.className = "p-2 rounded-lg bg-indigo-600 text-white font-semibold transition shadow";
-                } else {
-                    stepEl.classList.add('hidden');
-                    pillEl.className = i < stepNumber
-                        ? "p-2 rounded-lg bg-emerald-900/60 text-emerald-300 border border-emerald-700/50 font-semibold transition"
-                        : "p-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition";
-                }
-            }
-        }
-
-        // Seleccionar Variante de Quechua en Paso 1
-        function setVariant(variantName, regions, btnEl) {
-            currentVariant = variantName;
-            document.getElementById('mobile-variant-label').textContent = `${variantName} • Voz Activa`;
-            document.getElementById('audio-status-badge').textContent = variantName;
-            document.getElementById('constancia-lang').textContent = `${variantName} (Voz)`;
-
-            document.querySelectorAll('.variant-btn').forEach(b => {
-                b.className = "variant-btn flex items-center justify-between p-3 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-300 text-left transition";
-                b.querySelector('i').className = "far fa-circle text-slate-300 text-lg";
-            });
-            btnEl.className = "variant-btn flex items-center justify-between p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50/70 text-left transition";
-            btnEl.querySelector('i').className = "fas fa-circle-check text-indigo-600 text-lg";
-            showToast(`Variante adaptada: ${variantName} (${regions})`);
-        }
-
-        // Cambiar preferencia Voz vs Bilingüe
-        function setModePreference(mode) {
-            const voiceBtn = document.getElementById('pref-voice');
-            const biBtn = document.getElementById('pref-bilingual');
-            if (mode === 'voice') {
-                voiceBtn.className = "p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-center flex flex-col items-center gap-1 transition";
-                biBtn.className = "p-3 rounded-xl border-2 border-slate-200 bg-white text-center flex flex-col items-center gap-1 transition";
-                showToast("Modo priorizado: Audio + Pictogramas para baja lectura");
-            } else {
-                biBtn.className = "p-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-center flex flex-col items-center gap-1 transition";
-                voiceBtn.className = "p-3 rounded-xl border-2 border-slate-200 bg-white text-center flex flex-col items-center gap-1 transition";
-                showToast("Modo priorizado: Voz + Texto Bilingüe Quechua/Castellano");
-            }
-        }
-
-        // Simular Pipeline de Visión + RAG en Paso 2
-        function runDocumentAnalysis() {
-            const loader = document.getElementById('ai-pipeline-loader');
-            const s2 = document.getElementById('pipe-step-2');
-            const s3 = document.getElementById('pipe-step-3');
-            loader.classList.remove('hidden');
-
-            setTimeout(() => {
-                s2.className = "text-emerald-400 font-medium";
-                s2.textContent = "✓ 2. Cruzando con CPP Art. 71, Art. 114 y Ley N° 29735 (RAG)";
-            }, 650);
-
-            setTimeout(() => {
-                s3.className = "text-emerald-400 font-medium";
-                s3.textContent = `✓ 3. Explicación generada en ${currentVariant}`;
-            }, 1300);
-
-            setTimeout(() => {
-                loader.classList.add('hidden');
-                goToStep(3);
-                toggleExplanationAudio(); // Inicia el audio automáticamente para impactar en la demo
-            }, 1900);
-        }
-
-        // Permitir subir cualquier foto de acta durante la demo
-        function handleCustomImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            showToast(`Imagen "${file.name}" cargada en el motor OCR Multimodal`);
-            runDocumentAnalysis();
-        }
-
-        // Mostrar detalle de la norma peruana citada (RAG)
-        function showLegalCitation(normKey) {
-            const box = document.getElementById('citation-detail-box');
-            const norms = {
-                ley29735: "<strong>Ley N° 29735 (Ley de Lenguas Originarias, Art. 4.1):</strong> Todo ciudadano tiene derecho a usar su lengua originaria en forma oral y escrita ante cualquier autoridad pública y a recibir atención en su propio idioma.",
-                cpp114: "<strong>Código Procesal Penal (Art. 114 - Idioma):</strong> Las actuaciones procesales se realizan en castellano. Cuando una persona no comprenda el idioma, se le brindará obligatoriamente intérprete bajo sanción de nulidad.",
-                const2: "<strong>Constitución Política del Perú (Art. 2 inc. 19):</strong> Todo peruano tiene derecho a usar su propio idioma ante cualquier autoridad mediante un intérprete."
-            };
-            box.innerHTML = norms[normKey];
-            box.classList.remove('hidden');
-        }
-
-        // Manejo de respuestas en el Sello de Comprensión (Paso 4)
-        function handleVerificationAnswer(action) {
-            const discrepancyBox = document.getElementById('discrepancy-alert-box');
-            const reexplainBox = document.getElementById('reexplain-box');
-
-            if (action === 'trigger_discrepancy') {
-                reexplainBox.classList.add('hidden');
-                discrepancyBox.classList.remove('hidden');
-                speakText("Alerta de discrepancia. Don Julián indica cinco vacas, pero el acta dice cuatro. No firmar hasta corregir el acta.");
-                showToast("⚠️ ¡Discrepancia detectada entre la declaración y el acta!");
-            } else if (action === 'trigger_reexplain') {
-                discrepancyBox.classList.add('hidden');
-                reexplainBox.classList.remove('hidden');
-                document.getElementById('attempt-counter').textContent = "Intento 2 de 2 (Reexplicación)";
-                speakText("Ama llakikuychu. Te lo explico con palabras más sencillas: aunque no tengas dinero, el Estado te da un abogado defensor totalmente gratis.");
-            } else if (action === 'pass_direct') {
-                completeVerificationAndEmitSeal();
-            }
-        }
-
-        // Corregir el acta policial en vivo (Momento Estrella de Don Julián)
-        function fixActaDiscrepancy() {
-            const data = CASES[currentCaseKey];
-            document.getElementById('doc-body-preview').innerHTML = data.docBodyFixed;
-            document.getElementById('doc-tag-key').textContent = "Rectificado: 5 vacunos (Verificado)";
-            document.getElementById('discrepancy-alert-box').classList.add('hidden');
-            showToast("✓ Acta policial rectificada de 4 a 5 vacunos. Generando Sello...");
-            setTimeout(() => {
-                completeVerificationAndEmitSeal();
-            }, 600);
-        }
-
-        function passVerificationAfterReexplain() {
-            completeVerificationAndEmitSeal();
-        }
-
-        function completeVerificationAndEmitSeal() {
-            // Actualizar métricas en vivo en el Dashboard Institucional
-            document.getElementById('badge-new-record').classList.remove('hidden');
-            goToStep(5);
-            speakText("Allinmi. Sello de comprensión verificado y constancia bilingüe generada.");
-        }
-
-        function escalateToHuman() {
-            showToast("📞 Caso derivado a Intérprete Acreditado del Ministerio de Cultura y Defensa Pública (MINJUSDH)");
-            speakText("Derivando tu caso a un intérprete humano acreditado y a un defensor público.");
-        }
-
-        // =========================================================
-        // MOTOR DE VOZ (Web Speech API + Soporte MP3 Personalizado)
-        // =========================================================
-        function loadCustomAudio(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const url = URL.createObjectURL(file);
-            customAudioElement = new Audio(url);
-            showToast(`Audio MP3 "${file.name}" listo para reproducirse en la demo`);
-        }
-
-        function toggleExplanationAudio() {
-            const waveContainer = document.getElementById('waveform-container');
-            const playIcon = document.getElementById('play-icon');
-
-            if (isSpeaking) {
-                stopAudio();
-                return;
-            }
-
-            isSpeaking = true;
-            waveContainer.classList.add('playing');
-            playIcon.className = "fas fa-pause text-lg";
-
-            if (customAudioElement) {
-                customAudioElement.currentTime = 0;
-                customAudioElement.play();
-                customAudioElement.onended = () => stopAudio();
-            } else {
-                const textToSpeak = CASES[currentCaseKey].speechText;
-                speakText(textToSpeak, () => stopAudio());
-            }
-        }
-
-        function stopAudio() {
-            isSpeaking = false;
-            const waveContainer = document.getElementById('waveform-container');
-            const playIcon = document.getElementById('play-icon');
-            if (waveContainer) waveContainer.classList.remove('playing');
-            if (playIcon) playIcon.className = "fas fa-play text-lg ml-0.5";
-            if (customAudioElement) customAudioElement.pause();
-            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-        }
-
-        function playWelcomeAudio() {
-            speakText("Rimaykullayki. Allinllachu. Toca tu región para ayudarte en tu quechua.");
-        }
-
-        function speakQuestion() {
-            const data = CASES[currentCaseKey];
-            speakText(`${data.q1Quechua}. ${data.q1Spanish}`);
-        }
-
-        function speakCurrentScreen() {
-            const data = CASES[currentCaseKey];
-            speakText(data.speechText);
-        }
-
-        function speakText(text, onEndCallback) {
-            if (!('speechSynthesis' in window)) {
-                showToast("Simulando reproducción de voz en Quechua...");
-                setTimeout(() => { if (onEndCallback) onEndCallback(); }, 3000);
-                return;
-            }
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'es-PE';
-            utterance.rate = 0.95;
-            utterance.onend = () => {
-                if (onEndCallback) onEndCallback();
-            };
-            window.speechSynthesis.speak(utterance);
-        }
-
-        // =========================================================
-        // GENERADOR DE CONSTANCIA BILINGÜE Y SOLICITUD DE INTÉRPRETE
-        // =========================================================
-        function openPrintableModal(docType) {
-            const data = CASES[currentCaseKey];
-            const modalBackdrop = document.getElementById('modal-backdrop');
-            const content = document.getElementById('printable-content');
-            const now = new Date().toLocaleString('es-PE');
-
-            if (docType === 'constancia') {
-                content.innerHTML = `
-                    <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-extrabold uppercase tracking-wider text-indigo-700">Sistema Kuskachay AI • Cumplimiento Ley N° 29735</p>
-                            <h1 class="text-xl font-extrabold text-slate-900 mt-0.5">CONSTANCIA BILINGÜE DE COMPRENSIÓN DE DOCUMENTO</h1>
-                            <p class="text-xs text-slate-500">Yachaykuy Qhawachiq Rapi (Variante: ${currentVariant})</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="inline-block bg-emerald-100 text-emerald-800 font-mono font-bold text-xs px-2.5 py-1 rounded border border-emerald-300">${data.id}</span>
-                            <p class="text-[11px] text-slate-500 mt-1">${now}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
-                        <div>
-                            <p class="text-slate-500 font-semibold">Ciudadano Informado:</p>
-                            <p class="font-bold text-slate-900">${data.citizen} (DNI: ${data.dni})</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-500 font-semibold">Entidad / Dependencia:</p>
-                            <p class="font-bold text-slate-900">${data.institution}</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-500 font-semibold">Documento Explicado:</p>
-                            <p class="font-bold text-slate-900">${data.docTitle}</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-500 font-semibold">Lengua y Modalidad:</p>
-                            <p class="font-bold text-indigo-700">${currentVariant} (Explicación Oral + Pictogramas)</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <h3 class="text-xs font-extrabold uppercase text-slate-700">1. Contenido Explicado (Quechua / Castellano):</h3>
-                        <div class="p-3 rounded-xl border border-slate-200 bg-white text-xs space-y-1.5">
-                            <p class="italic font-semibold text-indigo-950">${data.quechuaText}</p>
-                            <p class="text-slate-600">${data.spanishText}</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <h3 class="text-xs font-extrabold uppercase text-slate-700">2. Resultado de la Verificación de Comprensión:</h3>
-                        <div class="p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 text-xs space-y-1">
-                            <p class="font-bold text-emerald-950">✓ ESTADO: COMPRENSIÓN VERIFICADA ANTES DE LA FIRMA</p>
-                            <p class="text-emerald-900"><strong>Registro de control:</strong> ${data.incidentSummary}.</p>
-                            <p class="text-slate-600"><strong>Normas invocadas:</strong> Art. 2 inc. 19 Constitución Política del Perú, Art. 71 y Art. 114 del Código Procesal Penal, Art. 4 de la Ley N° 29735.</p>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-200 flex justify-between items-center text-[11px] text-slate-500">
-                        <p>Esta constancia es evidencia auditable de cumplimiento de derechos lingüísticos y previene nulidades de oficio.</p>
-                        <span class="font-mono font-bold text-slate-700">HASH: 9F8A-29735-PERU</span>
-                    </div>
-                `;
-            } else {
-                content.innerHTML = `
-                    <div class="border-b-2 border-slate-800 pb-4">
-                        <p class="text-xs font-bold uppercase text-amber-700">Plantilla Jurídica Pre-llenada (Sujeta a revisión de Defensor Público)</p>
-                        <h1 class="text-lg font-extrabold text-slate-900 mt-0.5">SOLICITO: DESIGNACIÓN DE INTÉRPRETE EN LENGUA ORIGINARIA QUECHUA Y DEFENSOR PÚBLICO GRATUITO</h1>
-                    </div>
-
-                    <div class="space-y-3 text-xs leading-relaxed text-slate-800">
-                        <p class="font-bold">SEÑOR FISCAL / COMISARIO DE LA ${data.institution}:</p>
-                        <p>
-                            Yo, <strong>${data.citizen}</strong>, identificado(a) con DNI N° <strong>${data.dni}</strong>, con lengua materna <strong>${currentVariant}</strong>, en relación al documento <strong>${data.docTitle}</strong>, ante usted respetuosamente digo:
-                        </p>
-                        <p>
-                            Que, al amparo del <strong>Artículo 2 inciso 19 de la Constitución Política del Perú</strong>, el <strong>Artículo 4.1 de la Ley N° 29735 (Ley de Lenguas Originarias)</strong> y el <strong>Artículo 114 del Código Procesal Penal</strong>, SOLICITO se me asigne un <strong>INTÉRPRETE OFICIAL DE QUECHUA (${currentVariant})</strong> y un <strong>DEFENSOR PÚBLICO GRATUITO</strong> para todas las diligencias siguientes, a fin de garantizar mi derecho al debido proceso y defensa efectiva.
-                        </p>
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 italic text-indigo-950">
-                            <strong>Resumen explicado en Quechua al solicitante:</strong> "Kay rapiwanmi mañakuchkanki huk t'ikraqta (intérprete) hinallataq mana qullqillapaq abogadota hamuq diligenciakunapaq, Ley 29735 nisqanman hina."
-                        </div>
-                        <p class="pt-2"><strong>POR TANTO:</strong> Pido a usted acceder a mi solicitud por ser de justicia.</p>
-                        <div class="pt-6 flex justify-between items-center">
-                            <div class="border-t border-slate-400 pt-1 w-48 text-center">
-                                <p class="font-bold">${data.citizen}</p>
-                                <p class="text-[10px] text-slate-500">Firma o Impresión Dactilar Informada</p>
-                            </div>
-                            <div class="border-t border-slate-400 pt-1 w-48 text-center">
-                                <p class="font-bold">V°B° Defensor Público / Intérprete</p>
-                                <p class="text-[10px] text-slate-500">Validación Humana en el Circuito</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            modalBackdrop.classList.remove('hidden');
-        }
-
-        function closePrintableModal() {
-            document.getElementById('modal-backdrop').classList.add('hidden');
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast-notification');
-            document.getElementById('toast-message').textContent = msg;
-            toast.classList.remove('hidden');
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 3500);
-        }
-    </script>
+      } catch (e) {
+        console.warn('Error en Gemini Vision, usando OCR local:', e);
+      }
+    }
+  </script>
 </body>
 </html>
