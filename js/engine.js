@@ -199,10 +199,13 @@
         const paren = raw.match(/\(\s*0*(\d{1,3})\s*\)/);
         const n = paren ? parseInt(paren[1], 10) : wordToNumber(raw);
         if (n !== null && n > 0 && n < 1000) {
-          // si hay "CUATRO (04)", el paréntesis manda
-          const next = tokens[j + 1] && tokens[j + 1].match(/\(\s*0*(\d{1,3})\s*\)/);
-          const value = next ? parseInt(next[1], 10) : n;
-          f.cantidad = { n: value, es: value === 1 ? tipo.esUno : tipo.es, qu: tipo.qu, frase: clean(tokens.slice(j, i + 1).join(' ')) };
+          // "CUATRO (04)": si el número en letras y el de cifras no coinciden, mandan las letras,
+          // porque el OCR confunde cifras (0 y 6, 1 y 7) con más frecuencia que palabras.
+          const anterior = j > 0 ? tokens[j - 1].replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñ]/g, '') : '';
+          const enLetras = paren && anterior ? wordToNumber(anterior) : null;
+          const value = enLetras && enLetras > 0 ? enLetras : n;
+          const desde = enLetras ? j - 1 : j;
+          f.cantidad = { n: value, es: value === 1 ? tipo.esUno : tipo.es, qu: tipo.qu, frase: clean(tokens.slice(desde, i + 1).join(' ')) };
           break;
         }
       }
