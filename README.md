@@ -1,107 +1,102 @@
-# ⚖️ Kuskachay AI — Asistente Legal Bilingüe con Sello de Comprensión en Quechua
+# Kuskachay — Entiende antes de firmar
 
 > *"Nadie firma lo que no entiende. Hoy el sistema asume que entendiste; nosotros lo comprobamos."*
 
-[![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployed-success?logo=vercel)](https://finanzas-unt.vercel.app/)
-[![Hackathon](https://img.shields.io/badge/Hackathon-futurX%202026-blueviolet)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Kuskachay es una app web para personas quechuahablantes que reciben un documento legal en castellano
+(un acta policial, una citación fiscal, una notificación). La app lee el documento, lo explica en quechua
+y en castellano sencillo, y **comprueba con preguntas que la persona lo entendió antes de firmar**.
+Si algo no coincide con lo que la persona declaró, bloquea la firma y pide corregir el acta.
+Al final genera una constancia en PDF que sirve como evidencia complementaria para la institución.
+
+*Kuskachay* significa "igualar, emparejar" en quechua.
 
 ---
 
-## 📌 Visión General
+## Qué hace
 
-**Kuskachay AI** es una plataforma GovTech impulsada por Inteligencia Artificial multimodal diseñada para garantizar el debido proceso, la defensa efectiva y los derechos lingüísticos de más de 3.7 millones de quechuahablantes en el Perú.
+1. **Adaptación en el primer uso.** La persona elige su variante de quechua (chanka, collao o de Áncash)
+   y si prefiere escuchar o leer. Se guarda en el teléfono.
+2. **Lectura del documento.** Foto con la cámara, PDF, Word (.docx) o texto.
+   - Fotos: reconocimiento de texto (OCR) en el navegador con Tesseract.js.
+   - PDF: PDF.js. Si el PDF es escaneado, se lee con OCR.
+   - Word: Mammoth.js.
+   - Si la foto se lee mal, el texto se puede corregir y volver a analizar.
+3. **Datos importantes y alertas.** Tipo de documento, entidad, número, persona, cantidades, plazos, fecha de
+   citación y advertencias como *"el acta dice que no requirió intérprete"*.
+4. **Explicación** en quechua y castellano sencillo, con audio y con las normas que protegen a la persona.
+   Cada norma se abre en lenguaje claro.
+5. **Sello de comprensión.** Hasta 3 preguntas generadas **a partir del documento leído**
+   (por ejemplo, "¿Cuántas vacas dice el acta?" y "¿Cuántas te robaron de verdad?").
+   Se responde tocando, hablando o escribiendo, y la app evalúa la respuesta:
+   - Respuesta incorrecta: se explica de otra forma (máximo 2 repasos).
+   - Tras 2 repasos sin comprensión: se deriva a intérprete o defensor público.
+   - Si lo que declara la persona no coincide con el acta: **"No firmes todavía"**, con una pantalla
+     para mostrar al funcionario y la confirmación de la corrección.
+6. **Constancia en PDF** con lo explicado, cada pregunta y respuesta (y si fue por voz, toque o texto),
+   repasos, diferencias detectadas, correcciones, quién corrigió y una huella SHA-256 del registro.
+7. **Solicitud de intérprete y defensa pública** en PDF, rellenada con los datos del documento.
+8. **Preguntas libres** sobre el documento o los derechos de la persona ("¿me pueden llevar presa?").
+9. **Mis documentos:** historial con las constancias, que se pueden volver a descargar.
+10. **Panel institucional** (`#panel`): indicadores calculados con los registros reales del dispositivo
+    y exportación a CSV.
 
-A diferencia de los traductores genéricos, **Kuskachay AI** opera en el momento más crítico: **antes de la firma de un acta policial, notificación fiscal o citación judicial**. El sistema no solo traduce normas y actas a través de visión artificial y voz, sino que introduce un **"Sello de Comprensión"**: verifica mediante preguntas interactivas por voz si la persona realmente comprendió sus derechos y los hechos denunciados antes de estampar su firma o huella, emitiendo una constancia con validez probatoria institucional.
+## Voz en quechua
 
----
+Los navegadores no traen una voz en quechua: la voz del teléfono lee el texto con pronunciación castellana.
+Para la demo, en **Ajustes › Grabar voz en quechua** un hablante nativo puede grabar cada frase
+(la explicación, las preguntas, los repasos y las frases fijas) o subir un MP3.
+Desde ese momento la app reproduce la voz grabada en lugar de la sintética.
+Las grabaciones se guardan solo en ese navegador (IndexedDB).
 
-## 🚨 El Problema Social
+## Gemini (opcional)
 
-* **Barrera Idiomática Crítica:** Millones de ciudadanos quechuahablantes enfrentan diligencias legales, policiales y administrativas en un idioma que no dominan plenamente.
-* **Escasez de Intérpretes Acreditados:** Existen menos de 600 intérpretes oficiales certificados en el Registro Nacional de Intérpretes y Traductores (ReNIT) para atender a todo el país.
-* **Actas Nulas y Costos Procesales:** La firma de documentos sin comprensión real vulnera el debido proceso (Art. 2 inc. 19 de la Constitución y Ley 29735), generando miles de audiencias suspendidas, nulidades procesales y un costo millonario anual para el Estado peruano.
+Sin clave, todo funciona en el teléfono y el documento no sale del dispositivo.
+Con una clave de API de Gemini (en **Ajustes**), la app usa Gemini para leer fotos difíciles,
+completar los datos y redactar la explicación. Las normas que cite Gemini se filtran contra la base
+legal local (`js/legal.js`): no puede citar una norma que no esté ahí. Las preguntas de comprensión y su
+evaluación siempre las hace el motor local, para que sean auditables.
 
----
+El modelo por defecto es `gemini-flash-latest` y se puede cambiar en Ajustes.
 
-## 🌟 Capacidades Multimodales Reales (En el Navegador)
+## Estructura
 
-El prototipo ha sido potenciado para operar con capacidades multimodales reales ejecutadas directamente desde el navegador, sin depender de servidores complejos que puedan fallar en vivo:
+```
+index.html        estructura e íconos
+css/app.css       estilos (Atkinson Hyperlegible, paleta índigo / maíz / grana / qocha)
+js/legal.js       base legal local, en lenguaje claro
+js/engine.js      motor sin conexión: extracción de datos, explicación, preguntas y evaluación
+js/app.js         pantallas, voz, lectura de archivos, grabaciones, PDF, historial y panel
+favicon.svg       ícono
+```
 
-### 🎙️ 1. Comunicación por Micrófono en Vivo (Voz a Texto + Detección de Intención)
-* Integra la API nativa de reconocimiento de voz del navegador (`SpeechRecognition`) con un botón de micrófono pulsante.
-* El usuario puede hablar directamente al micrófono (por ejemplo: *"No entiendo qué significa esto, explícame más fácil"* o *"Me robaron 5 vacas, no 4"*).
-* El asistente detecta automáticamente la discrepancia o re-explica el contenido con un vocabulario más sencillo y accesible.
-* Incluye botones de acceso rápido debajo del micrófono para simular la entrada de voz con un solo clic durante demostraciones en vivo o streaming.
+Las librerías externas (PDF.js, Mammoth, Tesseract.js, pdf-lib) se cargan desde CDN solo cuando se necesitan.
 
-### 📸 2. Subida y Lectura Real de Fotografías / Imágenes Judiciales (OCR + Visión)
-* Permite tomar fotos con la cámara o subir cualquier imagen (`.jpg`, `.png`) de un acta, notificación o documento judicial.
-* Muestra la vista previa del documento y utiliza **Tesseract.js** (OCR 100% en el navegador) o integración opcional con **Gemini 1.5 Flash Vision** mediante API Key.
-* Extrae el contenido, clasifica el tipo de documento y lo traduce/explica en la variante quechua seleccionada (**Chanka**, **Collao** o **Áncash**) y en castellano sencillo.
+## Ejecutar en local
 
-### 📄 3. Recepción y Lectura Real de Documentos PDF, Word (.DOCX) y .TXT
-* **PDF.js (Mozilla):** Extrae texto real de archivos PDF cargados en vivo.
-* **Mammoth.js:** Procesa y lee documentos de Microsoft Word (`.docx`) al instante.
-* **Editor interactivo en vivo:** El área de texto extraído es completamente editable para pruebas en vivo con párrafos judiciales específicos solicitados por jurados.
+```bash
+git clone https://github.com/dylannikolas/kuskachay-ai-mvp.git
+cd kuskachay-ai-mvp
+python3 -m http.server 3000
+# abrir http://localhost:3000
+```
 
-### 🔊 4. Lectura en Voz Alta (TTS) y Re-explicación Adaptativa ("Sello de Comprensión")
-* Síntesis de voz en Quechua y Castellano con animación dinámica de ondas sonoras (con soporte para cargar audios `.mp3` de hablantes nativos).
-* Botón **"No entendí bien: Re-explicar con ejemplos sencillos"** para simplificar terminología jurídica a un lenguaje comunitario comprensible.
-* **Validación de Discrepancias:** Bloquea la firma si los hechos declarados no concuerdan con el acta (ej. caso de las 4 vs. 5 vacas de Don Julián).
-* **Exportación Institucional:** Genera en PDF imprimible tanto la **Constancia Bilingüe con Sello de Comprensión** como la **Solicitud de Intérprete Oficial** respaldada en la Ley N° 29735.
+El micrófono y la cámara solo funcionan en `https://` o en `localhost`.
+En Vercel se publica como sitio estático, sin configuración.
 
----
+## Límites conocidos (antes de usarlo con personas reales)
 
-## 💡 Nuestra Solución y Diferencial Clave
+- **Las frases en quechua son plantillas cortas y deben validarse con hablantes nativos de cada variante.**
+  Los números cambian por variante (por ejemplo, 4 es *tawa* en chanka y collao, y *chusku* en Áncash).
+- **Los textos legales de `js/legal.js` están resumidos** y deben revisarse con un abogado contra el texto oficial.
+- El motor local reconoce actas de denuncia, citaciones, actas de intervención y notificaciones con
+  formatos comunes. Documentos muy distintos dan explicaciones más generales (con Gemini mejora).
+- El reconocimiento de voz usa el del navegador en castellano (Chrome o Edge); entiende números y "sí/no"
+  también dichos en quechua (*tawa, pichqa, arí, manam*).
+- El historial y el panel usan los datos de ese dispositivo. Un despliegue institucional necesita un
+  servidor con registro central.
+- La constancia es **evidencia complementaria**: no reemplaza a un intérprete acreditado
+  ni es un documento oficial del Estado.
 
-### 1. El "Sello de Comprensión" (Diferenciador Imbatible)
-1. **Lectura Multimodal:** El ciudadano o funcionario fotografía o sube el documento oficial (acta, citación, PDF, Word).
-2. **Explicación por Voz en Lenguaje Claro:** La IA sintetiza los hechos y derechos en quechua adaptado a la variante regional del usuario.
-3. **Verificación Activa:** Formula preguntas de control por voz. Si detecta discrepancias, bloquea la firma y exige corrección inmediata.
-4. **Constancia Bilingüe con Trazabilidad:** Genera una constancia digital en PDF con sello de tiempo, preguntas auditables y citas legales de respaldo, protegiendo tanto al ciudadano como al funcionario público contra futuras nulidades.
+## Licencia
 
-### 2. Modelo B2G / SaaS Institucional
-* **Gratuito para el ciudadano:** Acceso directo desde web móvil ligera o bots conversacionales.
-* **Plataforma para el Estado (PNP, Fiscalía, MinJus, Poder Judicial):** Panel analítico centralizado con métricas de comprensión, tasas de discrepancia corregida, alertas de vulnerabilidad y ahorro estimado por reducción de actos nulos.
-
----
-
-## 🛠️ Arquitectura Técnica
-
-* **Frontend:** PWA interactiva ultra ligera desarrollada con HTML5, Tailwind CSS y Vanilla JS.
-* **Librerías del Cliente:**
-  * **Tesseract.js:** OCR local en navegador para fotos de actas.
-  * **PDF.js (Mozilla):** Renderizado y extracción de texto de PDFs.
-  * **Mammoth.js:** Lectura cliente de documentos Word (.docx).
-  * **Web Speech API:** Speech-to-Text y Text-to-Speech multilingüe.
-  * **Google Gemini 1.5 Flash Vision (Opcional):** Procesamiento de imágenes y análisis multimodal avanzado.
-* **RAG Legal (Normas Peruanas):**
-  * Constitución Política del Perú (Art. 2, inc. 19).
-  * Ley N° 29735 (Uso, preservación y recuperación de lenguas originarias).
-  * Código Procesal Penal (Derechos del imputado y la víctima).
-* **Despliegue:** Alojado en **Vercel Edge Network**.
-
----
-
-## 🚀 Despliegue y Ejecución Local
-
-1. **Clonar el repositorio:**
-   ```bash
-   git clone https://github.com/dylannikolas/kuskachay-ai-mvp.git
-   cd kuskachay-ai-mvp
-   ```
-
-2. **Ejecución Local:**
-   - Abre `index.html` directamente en tu navegador web.
-   - O inicia un servidor estático local:
-     ```bash
-     npx serve .
-     # o con Python
-     python -m http.server 3000
-     ```
-
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT.
+MIT.
